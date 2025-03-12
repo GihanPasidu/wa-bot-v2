@@ -9,9 +9,9 @@
     "restart": "pm2 restart cloudnextra"
   },
   "dependencies": {
-    "@whiskeysockets/baileys": "npm:asitha-baliyes-new",
-    "@adiwajshing/keyed-db": "latest",
-    "pino": "latest",
+    "@whiskeysockets/baileys": "^6.5.0",
+    "@adiwajshing/keyed-db": "^0.2.4",
+    "pino": "^8.15.0",
     "pm2": "latest",
     "express": "latest",
     "axios": "latest",

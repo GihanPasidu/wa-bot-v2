@@ -12,29 +12,33 @@ async function connectToWhatsApp() {
         version,
         printQRInTerminal: true,
         auth: state,
-        browser: ['CloudNextra Bot', 'Safari', '1.0.0'],
+        browser: ['Chrome (Linux)', '', ''],
+        connectTimeoutMs: 60_000,
+        emitOwnEvents: true,
+        retryRequestDelayMs: 2000,
+        browser: ['CloudNextra Bot', 'Desktop', '1.0.0'],
     });
 
-    sock.ev.on('creds.update', saveCreds);
-
+    // Handle connection updates with better retry logic
     sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect } = update;
+        const { connection, lastDisconnect, qr } = update;
         
-        if (connection === 'close') {
-            const shouldReconnect = (lastDisconnect?.error instanceof Boom)
-                ? lastDisconnect.error?.output?.statusCode !== DisconnectReason.loggedOut
-                : true;
+        if(connection === 'close') {
+            const statusCode = lastDisconnect?.error?.output?.statusCode;
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut && 
+                                  statusCode !== 405;
+            
+            console.log('Connection closed due to:', lastDisconnect?.error, 
+                       'Reconnecting:', shouldReconnect);
 
-            console.log('Connection closed due to:', lastDisconnect.error);
-
-            if (shouldReconnect) {
-                console.log('Reconnecting...');
-                connectToWhatsApp();
-            } else {
-                console.log('Connection closed. Not reconnecting.');
+            if(shouldReconnect) {
+                setTimeout(() => {
+                    console.log('Reconnecting to WhatsApp...');
+                    connectToWhatsApp();
+                }, 5000);
             }
-        } else if (connection === 'open') {
-            console.log('Connected successfully!');
+        } else if(connection === 'open') {
+            console.log('Connected successfully to WhatsApp');
         }
     });
 
@@ -54,5 +58,13 @@ async function connectToWhatsApp() {
     });
 }
 
-// Start the connection
-connectToWhatsApp().catch(err => console.log('Error:', err));
+// Add error handler
+process.on('unhandledRejection', error => {
+    console.log('Unhandled rejection:', error);
+});
+
+// Start with error handling
+connectToWhatsApp().catch(err => {
+    console.error('Fatal error:', err);
+    process.exit(1);
+});

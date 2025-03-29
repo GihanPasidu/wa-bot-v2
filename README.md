@@ -1,83 +1,109 @@
 # CloudNextra WhatsApp Bot
 
-A powerful WhatsApp bot created using Node.js with several useful features.
+<div align="center">
+  <img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white"/>
+  <img src="https://img.shields.io/badge/WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white"/>
+  <img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge"/>
+</div>
 
-## 🚀 Features
+## 📱 Always Online WhatsApp Bot
 
-- Auto-read status
-- Voice message conversion
-- Auto sticker creation
-- Anti-bad word filter
-- Anti-link protection
-- Anti-call protection 
-- Delete message tracking
-- Anti-bot protection
-- Welcome/Goodbye messages
-- Auto read commands
-- AI chat capabilities
-- Auto reactions
-- News sender
-- TikTok video sender
+A professional WhatsApp bot that maintains online presence with advanced features and a clean interface. Built using Node.js and the latest WhatsApp Web API.
 
-## 🛠️ Installation
+## ✨ Key Features
 
-1. Clone this repository:
+- 🟢 **Smart Presence Management**
+  - Configurable always-online mode
+  - Professional status updates
+  - Automatic reconnection handling
+
+- 🎮 **Simple Commands**
+  ```
+  .online  - Activate always online mode
+  .offline - Deactivate always online mode
+  .logout  - Safely logout and stop bot
+  ```
+
+- 📊 **Real-time Monitoring**
+  - Memory usage tracking
+  - Uptime monitoring
+  - Connection status logs
+  - Colorized terminal output
+
+- 🛡️ **Robust Error Handling**
+  - Automatic reconnection
+  - Graceful shutdown
+  - Error logging
+  - Session persistence
+
+## 🚀 Quick Start
+
+1. **Clone & Install**
 ```bash
-git clone https://github.com/yourusername/WA-BOT.git
-cd WA-BOT
-```
-
-2. Install the dependencies:
-```bash
+git clone https://github.com/yourusername/wa-bot.git
+cd wa-bot
 npm install
 ```
 
-3. Configure environment variables:
-   - Copy `settings.js.example` to `settings.js`
-   - Update the settings as needed
-
-4. Start the bot:
+2. **Start the Bot**
 ```bash
 npm start
 ```
 
-## 🔧 Configuration
+3. **Scan QR Code**
+- Open WhatsApp on your phone
+- Go to Settings > Linked Devices
+- Scan the QR code shown in terminal
 
-The following environment variables can be configured in `settings.js`:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| SESSION_ID | WhatsApp session ID | cloudnextra=xxx |
-| PREFIX | Command prefix | . |
-| SUDO | Admin number | 94767219661 |
-| AUTO_READ_STATUS | Auto read status | true |
-| ANTI_LINK | Anti-link protection | true |
-| ANTI_BOT | Anti-bot protection | true |
-| AI_CHAT | Enable AI chat | false |
-| NEWS_SEND_JID | News channel/group JID | "" |
-| TIKTOK_SEND_JID | TikTok channel/group JID | "" |
-
-## 🐳 Docker
-
-You can also run this bot using Docker:
+## 🛠️ Development
 
 ```bash
-docker build -t wa-bot .
-docker run -d --name wa-bot wa-bot
+# Run with auto-reload
+npm run dev
+
+# Run tests
+npm test
+
+# Check code style
+npm run lint
+```
+
+## 🐋 Docker Support
+
+```bash
+# Build image
+docker build -t cloudnextra-bot .
+
+# Run container
+docker run -d cloudnextra-bot
+```
+
+## ⚙️ Configuration
+
+Create `config.env` with these options:
+```env
+SESSION_ID=your_session_id
+AUTO_READ_STATUS=true
+ALLWAYS_OFFLINE=false
 ```
 
 ## 📝 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-## ⭐ Contributing
+## 🤝 Contributing
 
-Contributions, issues and feature requests are welcome! Feel free to check the [issues page](../../issues).
+1. Fork the repo
+2. Create feature branch (`git checkout -b feature/name`)
+3. Commit changes (`git commit -am 'Add feature'`)
+4. Push branch (`git push origin feature/name`)
+5. Create Pull Request
 
-## 📧 Contact
+## 💬 Support
 
-For questions and support, please join our WhatsApp group: [Join Group](#)
+Join our WhatsApp group for support and updates: [Click Here](#)
 
-## 🔰 Disclaimer
-
-This project is not affiliated with WhatsApp. Use at your own risk.
+---
+<div align="center">
+Made with ❤️ by CloudNextra
+</div>

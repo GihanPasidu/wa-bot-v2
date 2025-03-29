@@ -25,6 +25,21 @@ const formatBytes = (bytes) => {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 };
 
+const formatUptime = (seconds) => {
+    const days = Math.floor(seconds / (24 * 60 * 60));
+    const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
+    const minutes = Math.floor((seconds % (60 * 60)) / 60);
+    const secs = Math.floor(seconds % 60);
+
+    const parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    if (secs > 0 || parts.length === 0) parts.push(`${secs}s`);
+
+    return parts.join(' ');
+};
+
 const log = {
     info: (msg) => console.log(`\x1b[36m[${getTimestamp()}] INFO\x1b[0m: ${msg}`),
     success: (msg) => console.log(`\x1b[32m[${getTimestamp()}] SUCCESS\x1b[0m: ${msg}`),
@@ -43,13 +58,14 @@ const BOT_STATE = {
     presenceUpdateTimer: null
 };
 
-// Update command responses to match style
 const COMMANDS = {
     '.online': async (sock, jid) => {
         BOT_STATE.isAlwaysOnline = true;
         await sock.sendMessage(jid, { 
             text: `╭━━━『 *STATUS UPDATE* 』━━━╮
-│ Always Online Mode: Activated ✅
+│ 🟢 Mode: Always Online
+│ ✨ Status: Activated
+│ 🔄 Auto-Presence: Enabled
 ╰━━━━━━━━━━━━━━━━━━━━━╯` 
         });
         await sock.sendPresenceUpdate('available');
@@ -59,7 +75,9 @@ const COMMANDS = {
         BOT_STATE.isAlwaysOnline = false;
         await sock.sendMessage(jid, { 
             text: `╭━━━『 *STATUS UPDATE* 』━━━╮
-│ Always Online Mode: Deactivated ❌
+│ 🔴 Mode: Offline
+│ 💤 Status: Deactivated
+│ ⏸️ Auto-Presence: Disabled
 ╰━━━━━━━━━━━━━━━━━━━━━╯` 
         });
         await sock.sendPresenceUpdate('unavailable');
@@ -68,62 +86,48 @@ const COMMANDS = {
     '.logout': async (sock, jid) => {
         await sock.sendMessage(jid, { 
             text: `╭━━━『 *SYSTEM UPDATE* 』━━━╮
-│ Status: Logging Out...
-│ Action: Shutting Down Bot
+│ 🔄 Status: Logging Out
+│ 🛑 Action: Shutting Down
+│ 👋 Message: Goodbye!
 ╰━━━━━━━━━━━━━━━━━━━━━╯` 
         });
         stopPresenceUpdates();
         await sock.logout();
         process.exit(0);
-    }
-};
-
-// Update help message function with professional formatting
-const getHelpMessage = () => `
-╭━━━『 *CLOUDNEXTRA BOT* 』━━━╮
+    },
+    '.menu': async (sock, jid) => {
+        try {
+            await sock.sendMessage(jid, { 
+                text: `╭━━━『 *🤖 CLOUDNEXTRA BOT* 』━━━╮
 │
-├⦿ *ONLINE STATUS COMMANDS*
+├⦿ *📱 STATUS*
+│ ┌────────────────
+│ ├ 🟢 Online Mode: ${BOT_STATE.isAlwaysOnline ? 'Active' : 'Inactive'}
+│ ├ ⚡ Version: 1.0.0
+│ ├ 💻 Platform: ${process.platform}
+│ └────────────────
+│
+├⦿ *⌨️ COMMANDS*
 │ ┌────────────────
 │ ├ .online  ▹ Enable always online
 │ ├ .offline ▹ Disable always online
 │ ├ .logout  ▹ Logout and stop bot
+│ ├ .menu    ▹ Show this menu
 │ └────────────────
 │
-├⦿ *STATUS*
+├⦿ *📊 SYSTEM*
 │ ┌────────────────
-│ ├ Running Time: ${process.uptime()} seconds
-│ ├ Memory Usage: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB
+│ ├ ⏳ Uptime: ${formatUptime(process.uptime())}
+│ ├ 💾 Memory: ${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB
 │ └────────────────
 │
-╰━━━━━━━━━━━━━━━━━━━━━╯
-
-_Send these commands in your own chat to control the bot._`;
-
-const sendWelcomeMessages = async (sock, ownJid) => {
-    try {
-        // Welcome message with professional formatting
-        await sock.sendMessage(ownJid, {
-            text: `╭━━━『 *BOT STARTED* 』━━━╮
-│
-├⦿ *Status:* Online ✅
-├⦿ *Mode:* Always Online
-├⦿ *Version:* 1.0.0
-│
-├⦿ *System Info*
-│ ┌────────────────
-│ ├ Platform: ${process.platform}
-│ ├ Node: ${process.version}
-│ └────────────────
-│
-╰━━━━『 CloudNextra Bot 』━━━╯`
-        });
-
-        // Help message
-        await sock.sendMessage(ownJid, {
-            text: getHelpMessage()
-        });
-    } catch (error) {
-        log.error(`[WELCOME MESSAGE ERROR] ${error.message}`);
+╰━━━━『 ✨ CloudNextra Bot 』━━━╯` 
+            });
+            log.success('Menu displayed successfully');
+        } catch (error) {
+            log.error(`Failed to send menu: ${error.message}`);
+            throw error;
+        }
     }
 };
 
@@ -219,11 +223,12 @@ async function connectToWhatsApp() {
             log.success('\n┌──────── CONNECTION SUCCESSFUL ────────┐');
             log.success(`│ Status: Connected and Ready            │`);
             log.success(`│ Memory: ${formatBytes(memory.heapUsed)}/${formatBytes(memory.heapTotal)} │`);
-            log.success(`│ Uptime: ${Math.floor(uptime)}s                        │`);
+            log.success(`│ Uptime: ${formatUptime(uptime)}                    │`);
             log.success('└─────────────────────────────────────┘\n');
 
             const ownJid = sock.user.id.replace(/:[0-9]+@/, '@');
-            await sendWelcomeMessages(sock, ownJid);
+            // Send menu on startup
+            await COMMANDS['.menu'](sock, ownJid);
             
             if (BOT_STATE.isAlwaysOnline) {
                 await sock.sendPresenceUpdate('available');
@@ -245,8 +250,17 @@ async function connectToWhatsApp() {
 
         // Process commands only from own chat
         if (senderJid === ownJid && content.startsWith('.')) {
-            const command = content.toLowerCase();
-            if (COMMANDS[command]) {
+            const [command, ...args] = content.toLowerCase().split(' ');
+            if (command === '.msg') {
+                try {
+                    await COMMANDS['.msg'](sock, senderJid, args.join(' '));
+                } catch (error) {
+                    log.error(`Command execution failed: ${error.message}`);
+                    await sock.sendMessage(senderJid, { 
+                        text: '❌ Error executing command' 
+                    });
+                }
+            } else if (COMMANDS[command]) {
                 try {
                     log.info(`Executing command: ${command}`);
                     await COMMANDS[command](sock, senderJid);

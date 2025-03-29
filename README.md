@@ -87,6 +87,22 @@ AUTO_READ_STATUS=true
 ALLWAYS_OFFLINE=false
 ```
 
+## 🔐 Security Setup
+
+1. **Create Environment File**
+   ```bash
+   # Copy example config
+   cp config.env.example config.env
+   
+   # Edit with your settings
+   nano config.env
+   ```
+
+2. **Protect Sensitive Data**
+   - Never commit `config.env` or `auth_info` folder
+   - Keep your session ID private
+   - Use environment variables in production
+
 ## 📝 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.

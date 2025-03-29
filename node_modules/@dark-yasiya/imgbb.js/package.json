@@ -1,0 +1,39 @@
+{
+  "name": "@dark-yasiya/imgbb.js",
+  "version": "0.0.1",
+  "description": "The Unofficial Scraper for https://imgbb.com/",
+  "main": "imgbb.js",
+  "scripts": {
+    "start": "node imgbb.js"
+  },
+
+  "funding": "https://github.com/DarkYasiyaofc/",
+
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DarkYasiyaofc/imgbb.git"
+  },
+
+  "keywords": [
+    "img2url",
+    "imgtourl",
+    "imgbb",
+    "image",
+    "dyxt"
+  ],
+
+  "author": "DarkYasiyaofc",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/DarkYasiyaofc/imgbb/issues"
+  },
+
+  "homepage": "https://github.com/DarkYasiyaofc/imgbb#readme",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "path": "^0.12.7",
+    "fs": "^0.0.1-security",
+    "form-data": "^4.0.1",
+    "dark-yasiya": "0.0.2-security"
+  }
+}

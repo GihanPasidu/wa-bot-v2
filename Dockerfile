@@ -1,8 +1,9 @@
 FROM node:18-slim
 
-# Install system dependencies
+# Install system dependencies including git
 RUN apt-get update && \
     apt-get install -y \
+    git \
     ffmpeg \
     imagemagick \
     webp \
@@ -16,11 +17,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Remove lock file and install fresh (for first-time setup)
-RUN rm -f package-lock.json && \
-    npm install --omit=dev && \
-    npm shrinkwrap && \
-    mv npm-shrinkwrap.json package-lock.json
+# Install dependencies
+RUN npm install --omit=dev
 
 # Copy application code
 COPY . .
@@ -35,5 +33,7 @@ EXPOSE $PORT
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:$PORT/health || exit 1
 
+# Start the application
+CMD ["npm", "start"]
 # Start the application
 CMD ["npm", "start"]

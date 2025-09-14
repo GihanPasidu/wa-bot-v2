@@ -1,125 +1,149 @@
-# CloudNextra WhatsApp Bot
+# 🤖 CloudNextra WhatsApp Bot
 
-A professional WhatsApp bot built with Baileys library featuring auto-read functionality and online/offline presence control.
+A professional WhatsApp automation bot built with Baileys library, featuring Docker support and Render deployment.
 
-## Features
+## ✨ Features
 
-- **Auto Read**: Toggle automatic message reading with `.autoread`
-- **Presence Control**: Set online/offline status with `.online` and `.offline`
-- **Self-Chat Only**: All commands work only in self-chat for security
-- **Health Monitoring**: Built-in health check endpoint at `/health`
-- **Docker Ready**: Optimized for containerized deployment
-- **Render Compatible**: Easy deployment to Render.com
+- 🔐 Multi-device WhatsApp connection
+- ⚡ Fast and reliable message handling
+- 🔄 Auto-reconnection with retry logic
+- 📱 QR code generation for easy setup
+- 🌐 Web dashboard with real-time status
+- 🐳 Docker containerization
+- ☁️ Render deployment ready
+- 🔧 Keep-alive service for free hosting
 
-## Commands
+## 🚀 Quick Start
 
-- `.autoread` - Toggle auto-read functionality on/off
-- `.online` - Set WhatsApp status to online/available
-- `.offline` - Set WhatsApp status to offline/unavailable
-- `.panel` - Show control panel with current status
-- `.menu` - Show available commands
-- `.self <text>` - Echo text back to chat
+### Local Development
 
-## Deployment on Render with Docker
-
-### Quick Deploy
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
-
-### Manual Deployment
-
-1. **Fork this repository** to your GitHub account
-
-2. **Create a new Web Service** on [Render](https://render.com/)
-   - Connect your GitHub repository
-   - Choose "Docker" environment
-   - Use Dockerfile: `./Dockerfile`
-
-3. **Set Environment Variables:**
-   ```
-   NODE_ENV=production
-   SESSION_ID=your_session_here (optional)
-   AUTO_READ_STATUS=false
-   PORT=10000
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/WA-BOT.git
+   cd WA-BOT
    ```
 
-4. **Add Persistent Disk** (Recommended):
-   - Name: `wa-bot-storage`
-   - Mount Path: `/app/auth_info`
-   - Size: 1GB
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-5. **Deploy** your service
+3. **Start the bot**
+   ```bash
+   npm start
+   ```
 
-### Local Docker Development
+4. **Scan QR code**
+   - Open http://localhost:10000 in your browser
+   - Scan the QR code with your WhatsApp
 
-1. **Build the Docker image:**
+### Docker Deployment
+
+1. **Build the image**
    ```bash
    docker build -t wa-bot .
    ```
 
-2. **Run the container:**
+2. **Run the container**
    ```bash
-   docker run -p 3000:10000 -e PORT=10000 wa-bot
+   docker run -p 10000:10000 wa-bot
    ```
 
-3. **With persistent storage:**
-   ```bash
-   docker run -p 3000:10000 -v $(pwd)/auth_info:/app/auth_info wa-bot
-   ```
+### Render Deployment
+
+1. **Fork this repository**
+2. **Connect to Render**
+3. **Deploy using render.yaml**
+4. **Set environment variables**
+
+## 🎮 Bot Commands
+
+| Command | Description |
+|---------|-------------|
+| `.menu` | Show available commands |
+| `.panel` | Show control panel |
+| `.autoread` | Toggle auto-read status |
+| `.online` | Set presence to online |
+| `.offline` | Set presence to offline |
+| `.self <text>` | Echo text back |
+
+## ⚙️ Configuration
 
 ### Environment Variables
 
-- `SESSION_ID` - WhatsApp session data (optional, will generate QR if not set)
-- `AUTO_READ_STATUS` - Enable auto-read on startup (`true`/`false`)
-- `NODE_ENV` - Environment mode (`production`/`development`)
-- `PORT` - Server port (default: 10000 for Render)
-
-## Health Check
-
-The bot includes a health check endpoint at `/health` that returns:
-```json
-{
-  "status": "ok",
-  "timestamp": "2024-01-01T12:00:00.000Z",
-  "uptime": 3600,
-  "botConnected": true,
-  "environment": "production"
-}
+```env
+SESSION_ID=your_session_id
+AUTO_READ_STATUS=true
+PORT=10000
+NODE_ENV=production
 ```
 
-## Usage
+### Config Options
 
-1. After deployment, scan the QR code that appears in logs
-2. Once connected, send commands in your own chat (self-chat)
-3. All commands are restricted to self-chat for security
+Edit `config.js` to customize:
+- Reconnection attempts
+- Command prefix
+- Keep-alive settings
+- Logging levels
 
-## Troubleshooting
+## 📡 API Endpoints
 
-### Common Issues
+- `GET /` - Web dashboard
+- `GET /health` - Health check
+- `GET /ping` - Keep-alive ping
+- `GET /qr` - QR code API
+- `GET /status` - Bot status
+- `GET /keep-alive-stats` - Keep-alive statistics
 
-1. **Bot not responding**: Check if commands are sent from self-chat
-2. **Connection issues**: Check environment variables and restart service
-3. **Session expired**: Delete auth_info and scan QR code again
-4. **Docker build fails**: Ensure all dependencies are in package.json
+## 🔧 Development
 
-### Render-Specific Issues
+### Project Structure
 
-1. **Health check failing**: Ensure PORT is set to 10000
-2. **Persistent storage**: Mount disk to `/app/auth_info`
-3. **Build timeout**: Use `render.yaml` for configuration
+```
+WA-BOT/
+├── index.js          # Main bot file
+├── config.js         # Configuration
+├── polyfill.js       # Node.js polyfills
+├── keep-alive.js     # Keep-alive service
+├── package.json      # Dependencies
+├── Dockerfile        # Container config
+├── render.yaml       # Render deployment
+└── auth_info/        # WhatsApp session data
+```
 
-## License
+### Scripts
 
-Apache-2.0 License - see [LICENSE](LICENSE) file for details.
+```bash
+npm start          # Start the bot
+npm run dev        # Development mode
+npm run docker:build  # Build Docker image
+npm run docker:run    # Run Docker container
+```
 
-## Made by CloudNextra
+## 🛡️ Security
 
-Professional bot development services available.
+- Commands only work in self-chat
+- Session data is encrypted
+- No sensitive data in logs
+- Secure Docker container
+
+## 📝 License
+
+Apache License 2.0 - see [LICENSE](LICENSE) file
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## 📞 Support
+
+- 🐛 [Report bugs](https://github.com/yourusername/WA-BOT/issues)
+- 💬 [Discussions](https://github.com/yourusername/WA-BOT/discussions)
+- 📧 Contact: support@cloudnextra.com
 
 ---
-<div align="center">
-Made with ❤️ by CloudNextra
-</div>
----
-<div align="center">
-Made with ❤️ by CloudNextra
-</div>
+
+Made with ❤️ by [CloudNextra](https://cloudnextra.com)

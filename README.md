@@ -1,124 +1,124 @@
 # CloudNextra WhatsApp Bot
 
-<div align="center">
-  <img src="https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white"/>
-  <img src="https://img.shields.io/badge/WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white"/>
-  <img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge"/>
-</div>
+A professional WhatsApp bot built with Baileys library featuring auto-read functionality and online/offline presence control.
 
-## 📱 Always Online WhatsApp Bot
+## Features
 
-A professional WhatsApp bot that maintains online presence with advanced features and a clean interface. Built using Node.js and the latest WhatsApp Web API.
+- **Auto Read**: Toggle automatic message reading with `.autoread`
+- **Presence Control**: Set online/offline status with `.online` and `.offline`
+- **Self-Chat Only**: All commands work only in self-chat for security
+- **Health Monitoring**: Built-in health check endpoint at `/health`
+- **Docker Ready**: Optimized for containerized deployment
+- **Render Compatible**: Easy deployment to Render.com
 
-## ✨ Key Features
+## Commands
 
-- 🟢 **Smart Presence Management**
-  - Configurable always-online mode
-  - Professional status updates
-  - Automatic reconnection handling
+- `.autoread` - Toggle auto-read functionality on/off
+- `.online` - Set WhatsApp status to online/available
+- `.offline` - Set WhatsApp status to offline/unavailable
+- `.panel` - Show control panel with current status
+- `.menu` - Show available commands
+- `.self <text>` - Echo text back to chat
 
-- 🎮 **Simple Commands**
-  ```
-  .online  - Activate always online mode
-  .offline - Deactivate always online mode
-  .logout  - Safely logout and stop bot
-  ```
+## Deployment on Render with Docker
 
-- 📊 **Real-time Monitoring**
-  - Memory usage tracking
-  - Uptime monitoring
-  - Connection status logs
-  - Colorized terminal output
+### Quick Deploy
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 
-- 🛡️ **Robust Error Handling**
-  - Automatic reconnection
-  - Graceful shutdown
-  - Error logging
-  - Session persistence
+### Manual Deployment
 
-## 🚀 Quick Start
+1. **Fork this repository** to your GitHub account
 
-1. **Clone & Install**
-```bash
-git clone https://github.com/yourusername/wa-bot.git
-cd wa-bot
-npm install
-```
+2. **Create a new Web Service** on [Render](https://render.com/)
+   - Connect your GitHub repository
+   - Choose "Docker" environment
+   - Use Dockerfile: `./Dockerfile`
 
-2. **Start the Bot**
-```bash
-npm start
-```
-
-3. **Scan QR Code**
-- Open WhatsApp on your phone
-- Go to Settings > Linked Devices
-- Scan the QR code shown in terminal
-
-## 🛠️ Development
-
-```bash
-# Run with auto-reload
-npm run dev
-
-# Run tests
-npm test
-
-# Check code style
-npm run lint
-```
-
-## 🐋 Docker Support
-
-```bash
-# Build image
-docker build -t cloudnextra-bot .
-
-# Run container
-docker run -d cloudnextra-bot
-```
-
-## ⚙️ Configuration
-
-Create `config.env` with these options:
-```env
-SESSION_ID=your_session_id
-AUTO_READ_STATUS=true
-ALLWAYS_OFFLINE=false
-```
-
-## 🔐 Security Setup
-
-1. **Create Environment File**
-   ```bash
-   # Copy example config
-   cp config.env.example config.env
-   
-   # Edit with your settings
-   nano config.env
+3. **Set Environment Variables:**
+   ```
+   NODE_ENV=production
+   SESSION_ID=your_session_here (optional)
+   AUTO_READ_STATUS=false
+   PORT=10000
    ```
 
-2. **Protect Sensitive Data**
-   - Never commit `config.env` or `auth_info` folder
-   - Keep your session ID private
-   - Use environment variables in production
+4. **Add Persistent Disk** (Recommended):
+   - Name: `wa-bot-storage`
+   - Mount Path: `/app/auth_info`
+   - Size: 1GB
 
-## 📝 License
+5. **Deploy** your service
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+### Local Docker Development
 
-## 🤝 Contributing
+1. **Build the Docker image:**
+   ```bash
+   docker build -t wa-bot .
+   ```
 
-1. Fork the repo
-2. Create feature branch (`git checkout -b feature/name`)
-3. Commit changes (`git commit -am 'Add feature'`)
-4. Push branch (`git push origin feature/name`)
-5. Create Pull Request
+2. **Run the container:**
+   ```bash
+   docker run -p 3000:10000 -e PORT=10000 wa-bot
+   ```
 
-## 💬 Support
+3. **With persistent storage:**
+   ```bash
+   docker run -p 3000:10000 -v $(pwd)/auth_info:/app/auth_info wa-bot
+   ```
 
-Join our WhatsApp group for support and updates: [Click Here](#)
+### Environment Variables
 
+- `SESSION_ID` - WhatsApp session data (optional, will generate QR if not set)
+- `AUTO_READ_STATUS` - Enable auto-read on startup (`true`/`false`)
+- `NODE_ENV` - Environment mode (`production`/`development`)
+- `PORT` - Server port (default: 10000 for Render)
+
+## Health Check
+
+The bot includes a health check endpoint at `/health` that returns:
+```json
+{
+  "status": "ok",
+  "timestamp": "2024-01-01T12:00:00.000Z",
+  "uptime": 3600,
+  "botConnected": true,
+  "environment": "production"
+}
+```
+
+## Usage
+
+1. After deployment, scan the QR code that appears in logs
+2. Once connected, send commands in your own chat (self-chat)
+3. All commands are restricted to self-chat for security
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Bot not responding**: Check if commands are sent from self-chat
+2. **Connection issues**: Check environment variables and restart service
+3. **Session expired**: Delete auth_info and scan QR code again
+4. **Docker build fails**: Ensure all dependencies are in package.json
+
+### Render-Specific Issues
+
+1. **Health check failing**: Ensure PORT is set to 10000
+2. **Persistent storage**: Mount disk to `/app/auth_info`
+3. **Build timeout**: Use `render.yaml` for configuration
+
+## License
+
+Apache-2.0 License - see [LICENSE](LICENSE) file for details.
+
+## Made by CloudNextra
+
+Professional bot development services available.
+
+---
+<div align="center">
+Made with ❤️ by CloudNextra
+</div>
 ---
 <div align="center">
 Made with ❤️ by CloudNextra

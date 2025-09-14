@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: cloudnextra-wa-bot
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: oregon
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SESSION_ID
+        sync: false
+      - key: AUTO_READ_STATUS
+        value: "false"
+      - key: PORT
+        value: "10000"
+      - key: RENDER_EXTERNAL_URL
+        value: https://cloudnextra-wa-bot.onrender.com
+    healthCheckPath: /health
+    disk:
+      name: wa-bot-storage
+      mountPath: /app/auth_info
+      sizeGB: 1

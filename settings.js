@@ -1,14 +1,25 @@
-const fs = require('fs');
-if (fs.existsSync('config.env')) require('dotenv').config({ path: './config.env' });
-function convertToBool(text, fault = 'true') {
-    return text === fault ? true : false;
-}
-try {
-	// Load .env / config.env variables if dotenv is installed
-	require('dotenv').config({ path: './config.env' });
-} catch (e) {
-	// dotenv not available — continue
-}
-
-// Export app config from config.js
-module.exports = require('./config');
+/**
+ * Bot Settings Configuration
+ */
+module.exports = {
+    // Bot settings
+    name: 'CloudNextra Bot',
+    version: '1.0.0',
+    
+    // Connection settings
+    reconnectAttempts: 5,
+    reconnectDelay: 5000,
+    reconnectDelayOnAuthReset: 3000,
+    reconnectDelayOnStreamError: 10000,
+    keepAliveInterval: 600000,
+    
+    // Commands
+    commands: {
+        prefix: '.'
+    },
+    
+    // Features
+    autoRead: {
+        enabled: false
+    }
+};

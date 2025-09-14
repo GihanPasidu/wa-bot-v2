@@ -1,19 +1,38 @@
 {
   "name": "cloudnextra-wa-bot",
   "version": "1.0.0",
-  "description": "CloudNextra WhatsApp Bot",
+  "description": "Professional WhatsApp Bot by CloudNextra",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "docker:build": "docker build -t wa-bot .",
+    "docker:run": "docker run -p 3000:3000 wa-bot",
+    "test": "echo \"No tests specified\" && exit 0"
   },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "baileys",
+    "cloudnextra",
+    "render",
+    "docker"
+  ],
+  "author": "CloudNextra",
   "license": "Apache-2.0",
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.17.16",
     "@hapi/boom": "^10.0.1",
-    "dotenv": "^16.6.1"
+    "@whiskeysockets/baileys": "^6.17.16",
+    "dotenv": "^16.6.1",
+    "express": "^4.19.2",
+    "qrcode": "^1.5.3",
+    "node-cron": "^3.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

@@ -1,20 +1,36 @@
-FROM node:lts-buster 
+FROM node:18-slim
+
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y \
     ffmpeg \
     imagemagick \
-    webp && \
-    apt-get upgrade -y && \
-    rm -rf /var/lib/apt/lists/*
-  
-WORKDIR /usr/src/app
+    webp \
+    curl \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY package.json .
+# Set working directory
+WORKDIR /app
 
-RUN npm install && npm install -g qrcode-terminal pm2
+# Copy package files
+COPY package*.json ./
 
+# Install dependencies
+RUN npm ci --only=production
+
+# Copy application code
 COPY . .
 
-EXPOSE 5000
+# Create directory for auth data
+RUN mkdir -p auth_info
 
+# Expose port
+EXPOSE $PORT
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:$PORT/health || exit 1
+
+# Start the application
 CMD ["npm", "start"]

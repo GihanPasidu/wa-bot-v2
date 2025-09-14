@@ -1,11 +1,12 @@
 # 🤖 CloudNextra WhatsApp Bot
 
-A professional WhatsApp automation bot built with Baileys library, featuring **QR code web interface** for easy setup.
+A professional WhatsApp automation bot built with Baileys library, featuring **QR code web interface** and **status auto-read** functionality.
 
 ## ✨ Features
 
 - 🔐 Multi-device WhatsApp connection
 - 📱 **QR code web interface** - No need to check terminal!
+- 📊 **Auto-read status updates** - Only reads status, not messages
 - 🌐 Beautiful web dashboard with real-time status
 - ⚡ Fast and reliable message handling
 - 🔄 Auto-reconnection with retry logic
@@ -34,32 +35,37 @@ A professional WhatsApp automation bot built with Baileys library, featuring **Q
    - Scan with WhatsApp: Settings → Linked Devices → Link a Device
    - No need to check terminal!
 
-## 📱 QR Code Web Interface
-
-The bot automatically displays the QR code on the web interface at:
-- **Local**: http://localhost:10000
-- **Production**: Your deployed URL
-
-Features:
-- ✅ Auto-refresh QR code
-- ✅ Real-time connection status
-- ✅ Mobile-friendly interface
-- ✅ No terminal access needed
-
 ## 🎮 Bot Commands
 
 | Command | Description |
 |---------|-------------|
 | `.menu` | Show available commands |
 | `.panel` | Show control panel |
-| `.autoread` | Toggle auto-read status |
+| `.autoread` | Toggle auto-read for status updates only |
 | `.online` | Set presence to online |
 | `.offline` | Set presence to offline |
 | `.self <text>` | Echo text back |
 
----
+## 📊 Auto-Read Feature
 
-Made with ❤️ by [CloudNextra](https://cloudnextra.com)
+The auto-read feature is designed to **only read status updates**, not regular messages:
+
+- ✅ **Reads:** WhatsApp status updates automatically
+- ❌ **Doesn't read:** Regular chat messages
+- 🔧 **Toggle:** Use `.autoread` command to enable/disable
+
+This ensures your privacy while keeping up with status updates from contacts.
+
+## 📡 API Endpoints
+
+- `GET /` - Web dashboard with QR code interface
+- `GET /qr` - QR code API endpoint
+- `GET /status` - Bot connection status
+- `GET /health` - Health check
+- `GET /ping` - Keep-alive ping
+
+## 🔧 QR Code Troubleshooting
+
 If the QR code doesn't appear:
 
 1. **Check the console logs** for QR generation messages
@@ -75,12 +81,6 @@ The QR code will only appear when:
 ---
 
 Made with ❤️ by [CloudNextra](https://cloudnextra.com)
-NODE_ENV=production
-```
-
-### Config Options
-
-Edit `config.js` to customize:
 - Reconnection attempts
 - Command prefix
 - Keep-alive settings

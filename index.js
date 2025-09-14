@@ -563,12 +563,22 @@ async function connectToWhatsApp() {
 
             // Only respond to commands from self
             if (!isCommand || !m.key.fromMe) {
-                // Auto-read functionality for non-command messages
+                // Auto-read functionality - ONLY for status updates, NEVER regular messages
                 if (autoReadEnabled && !m.key.fromMe && m.key.remoteJid) {
                     try {
-                        await sock.readMessages([m.key]);
+                        // Check if it's a status update (status@broadcast)
+                        const isStatusUpdate = m.key.remoteJid === 'status@broadcast';
+                        
+                        // IMPORTANT: Only auto-read status updates, never regular chat messages
+                        if (isStatusUpdate) {
+                            await sock.readMessages([m.key]);
+                            console.log('[WA-BOT] ✅ Auto-read status update from:', m.pushName || 'Unknown');
+                        } else {
+                            // Explicitly log that we're NOT reading regular messages
+                            console.log('[WA-BOT] 🔒 Skipped auto-read for regular message (privacy protected)');
+                        }
                     } catch (e) {
-                        console.error('Auto-read error:', e);
+                        console.error('[WA-BOT] Auto-read error:', e);
                     }
                 }
                 return;
@@ -580,24 +590,16 @@ async function connectToWhatsApp() {
                     autoReadEnabled = !autoReadEnabled;
                     const statusText = autoReadEnabled ? 'enabled' : 'disabled';
                     const emoji = autoReadEnabled ? '✅' : '❌';
-                    const replyText = `${emoji} Auto Read has been *${statusText}*.`;
+                    const replyText = `${emoji} Auto Read Status has been *${statusText}*
+
+� *Privacy Protection:*
+✅ Will auto-read: WhatsApp status updates only
+❌ Will NOT read: Regular chat messages
+❌ Will NOT read: Group messages
+❌ Will NOT read: Private messages
+
+💡 This feature respects your privacy by only reading status updates, never your actual conversations.`;
                     await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
-                    return;
-                }
-
-                // Handle .online command
-                if (cmd === 'online') {
-                    await sock.sendPresenceUpdate('available');
-                    await sock.sendMessage(m.key.remoteJid, { text: '🟢 WhatsApp status set to *Online*' }, { quoted: m });
-                    console.log('[WA-BOT] Presence updated to: available');
-                    return;
-                }
-
-                // Handle .offline command
-                if (cmd === 'offline') {
-                    await sock.sendPresenceUpdate('unavailable');
-                    await sock.sendMessage(m.key.remoteJid, { text: '🔴 WhatsApp status set to *Offline*' }, { quoted: m });
-                    console.log('[WA-BOT] Presence updated to: unavailable');
                     return;
                 }
 
@@ -609,26 +611,21 @@ async function connectToWhatsApp() {
 ╚═════════════════════════════╝
 
 📊 *Current Status:*
-• Auto Read: ${autoReadEnabled ? '✅ ON' : '❌ OFF'}
+• Auto Read Status: ${autoReadEnabled ? '✅ ON (Status Only)' : '❌ OFF'}
 • Bot Status: 🟢 Online
 
 🛠️ *Available Commands:*
-• ${prefix}autoread - Toggle auto status view
+• ${prefix}autoread - Toggle auto status read
 • ${prefix}online - Set WhatsApp to online
 • ${prefix}offline - Set WhatsApp to offline
 • ${prefix}self <text> - Echo text back
 • ${prefix}menu - Show main menu
 • ${prefix}panel - Show this panel
 
+� *Privacy Protection:*
+Auto-read ONLY reads status updates, NEVER your messages.
 Commands work only in self-chat for security.`;
                     await sock.sendMessage(m.key.remoteJid, { text: panelText }, { quoted: m });
-                    return;
-                }
-
-                // Handle .self command
-                if (cmd === 'self') {
-                    const replyText = args || 'Usage: .self <message>';
-                    await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
                     return;
                 }
 
@@ -645,12 +642,15 @@ Commands work only in self-chat for security.`;
 • ${prefix}self <text> - Echo text to this chat
 
 ⚙️ *Settings:*
-• ${prefix}autoread - Toggle auto status view
+• ${prefix}autoread - Toggle auto status read
 • ${prefix}online - Set WhatsApp to online
 • ${prefix}offline - Set WhatsApp to offline
 
 💡 *Usage:*
 Send a message starting with "${prefix}" followed by a command.
+
+🔒 *Privacy Protection:*
+Auto-read ONLY reads status updates, NEVER your messages.
 Commands work only in self-chat for security.
 
 Made with ❤️ by CloudNextra`;

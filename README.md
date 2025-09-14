@@ -39,12 +39,10 @@ A professional WhatsApp automation bot built with Baileys library, featuring **Q
 
 | Command | Description |
 |---------|-------------|
-| `.menu` | Show available commands |
 | `.panel` | Show control panel |
 | `.autoread` | Toggle auto-read for status updates only |
 | `.online` | Set presence to online |
 | `.offline` | Set presence to offline |
-| `.self <text>` | Echo text back |
 
 ## 📊 Auto-Read Feature
 

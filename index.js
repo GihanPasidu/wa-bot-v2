@@ -615,12 +615,10 @@ async function connectToWhatsApp() {
 • Bot Status: 🟢 Online
 
 🛠️ *Available Commands:*
-• ${prefix}autoread - Toggle auto status read
-• ${prefix}online - Set WhatsApp to online
-• ${prefix}offline - Set WhatsApp to offline
-• ${prefix}self <text> - Echo text back
-• ${prefix}menu - Show main menu
-• ${prefix}panel - Show this panel
+• ${prefix}panel - Show control panel
+• ${prefix}autoread - Toggle auto-read for status updates only
+• ${prefix}online - Set presence to online
+• ${prefix}offline - Set presence to offline
 
 � *Privacy Protection:*
 Auto-read ONLY reads status updates, NEVER your messages.
@@ -629,39 +627,40 @@ Commands work only in self-chat for security.`;
                     return;
                 }
 
-                // Handle .menu and .help commands
-                if (cmd === 'menu' || cmd === 'help') {
-                    const menuText = 
-`╔═════════════════════════════╗
-║   CloudNextra Bot — Menu    ║
-╚═════════════════════════════╝
+                // Handle .online command
+                if (cmd === 'online') {
+                    try {
+                        await sock.sendPresenceUpdate('available');
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '✅ Presence set to *Online*' 
+                        }, { quoted: m });
+                    } catch (error) {
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '❌ Failed to set presence to online' 
+                        }, { quoted: m });
+                    }
+                    return;
+                }
 
-🤖 *Main Commands:*
-• ${prefix}menu - Show this menu
-• ${prefix}panel - Show control panel
-• ${prefix}self <text> - Echo text to this chat
-
-⚙️ *Settings:*
-• ${prefix}autoread - Toggle auto status read
-• ${prefix}online - Set WhatsApp to online
-• ${prefix}offline - Set WhatsApp to offline
-
-💡 *Usage:*
-Send a message starting with "${prefix}" followed by a command.
-
-🔒 *Privacy Protection:*
-Auto-read ONLY reads status updates, NEVER your messages.
-Commands work only in self-chat for security.
-
-Made with ❤️ by CloudNextra`;
-                    await sock.sendMessage(m.key.remoteJid, { text: menuText }, { quoted: m });
+                // Handle .offline command
+                if (cmd === 'offline') {
+                    try {
+                        await sock.sendPresenceUpdate('unavailable');
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '✅ Presence set to *Offline*' 
+                        }, { quoted: m });
+                    } catch (error) {
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '❌ Failed to set presence to offline' 
+                        }, { quoted: m });
+                    }
                     return;
                 }
 
                 // Unknown command
                 if (cmd) {
                     await sock.sendMessage(m.key.remoteJid, { 
-                        text: `❓ Unknown command: *${cmd}*\nType ${prefix}menu to see available commands.` 
+                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n• ${prefix}panel - Show control panel\n• ${prefix}autoread - Toggle auto-read for status updates only\n• ${prefix}online - Set presence to online\n• ${prefix}offline - Set presence to offline` 
                     }, { quoted: m });
                 }
 

@@ -2,6 +2,7 @@
  * CloudNextra WhatsApp Bot Starter
  */
 
+// Simple start script for the WhatsApp bot
 console.log('🚀 Starting CloudNextra WhatsApp Bot...');
 
 // Load environment variables

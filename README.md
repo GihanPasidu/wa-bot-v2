@@ -1,60 +1,50 @@
 # 🤖 CloudNextra WhatsApp Bot
 
-A professional WhatsApp automation bot built with Baileys library, featuring Docker support and Render deployment.
+A professional WhatsApp automation bot built with Baileys library, featuring **QR code web interface** for easy setup.
 
 ## ✨ Features
 
 - 🔐 Multi-device WhatsApp connection
+- 📱 **QR code web interface** - No need to check terminal!
+- 🌐 Beautiful web dashboard with real-time status
 - ⚡ Fast and reliable message handling
 - 🔄 Auto-reconnection with retry logic
-- 📱 QR code generation for easy setup
-- 🌐 Web dashboard with real-time status
 - 🐳 Docker containerization
 - ☁️ Render deployment ready
-- 🔧 Keep-alive service for free hosting
 
 ## 🚀 Quick Start
 
 ### Local Development
 
-1. **Clone the repository**
+1. **Clone and install**
    ```bash
    git clone https://github.com/yourusername/WA-BOT.git
    cd WA-BOT
-   ```
-
-2. **Install dependencies**
-   ```bash
    npm install
    ```
 
-3. **Start the bot**
+2. **Start the bot**
    ```bash
    npm start
    ```
 
-4. **Scan QR code**
+3. **Connect WhatsApp via Web Interface**
    - Open http://localhost:10000 in your browser
-   - Scan the QR code with your WhatsApp
+   - The QR code will automatically appear when disconnected
+   - Scan with WhatsApp: Settings → Linked Devices → Link a Device
+   - No need to check terminal!
 
-### Docker Deployment
+## 📱 QR Code Web Interface
 
-1. **Build the image**
-   ```bash
-   docker build -t wa-bot .
-   ```
+The bot automatically displays the QR code on the web interface at:
+- **Local**: http://localhost:10000
+- **Production**: Your deployed URL
 
-2. **Run the container**
-   ```bash
-   docker run -p 10000:10000 wa-bot
-   ```
-
-### Render Deployment
-
-1. **Fork this repository**
-2. **Connect to Render**
-3. **Deploy using render.yaml**
-4. **Set environment variables**
+Features:
+- ✅ Auto-refresh QR code
+- ✅ Real-time connection status
+- ✅ Mobile-friendly interface
+- ✅ No terminal access needed
 
 ## 🎮 Bot Commands
 
@@ -67,14 +57,24 @@ A professional WhatsApp automation bot built with Baileys library, featuring Doc
 | `.offline` | Set presence to offline |
 | `.self <text>` | Echo text back |
 
-## ⚙️ Configuration
+---
 
-### Environment Variables
+Made with ❤️ by [CloudNextra](https://cloudnextra.com)
+If the QR code doesn't appear:
 
-```env
-SESSION_ID=your_session_id
-AUTO_READ_STATUS=true
-PORT=10000
+1. **Check the console logs** for QR generation messages
+2. **Refresh the page** - the QR updates automatically
+3. **Clear auth_info folder** if you're having session issues
+4. **Check browser console** for JavaScript errors
+
+The QR code will only appear when:
+- The bot is disconnected from WhatsApp
+- A new session needs to be established
+- The previous session has expired
+
+---
+
+Made with ❤️ by [CloudNextra](https://cloudnextra.com)
 NODE_ENV=production
 ```
 
@@ -88,7 +88,7 @@ Edit `config.js` to customize:
 
 ## 📡 API Endpoints
 
-- `GET /` - Web dashboard
+- `GET /` - Web dashboard with QR code
 - `GET /health` - Health check
 - `GET /ping` - Keep-alive ping
 - `GET /qr` - QR code API

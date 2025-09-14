@@ -1,3 +1,6 @@
+// Load polyfills first
+require('./polyfill');
+
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const fs = require('fs');
 const path = require('path');
@@ -487,77 +490,74 @@ async function connectToWhatsApp() {
 					currentSock = null;
 
 					// schedule a reconnect attempt (count it)
-					retryCount++;
-					if (retryCount < maxRetries) {
-						const delay = config.reconnectDelayOnStreamError ?? (config.reconnectDelay ?? 10000);
 						setTimeout(() => {
-							isConnecting = false;
-							connectToWhatsApp();
-						}, delay);
-					} else {
+							isConnecting = false;ries) {
+							connectToWhatsApp();reconnectDelayOnStreamError ?? (config.reconnectDelay ?? 10000);
+						}, delay);(() => {
+					} else {ecting = false;
 						console.error('Exceeded max retries for stream errors — exiting to allow supervisor restart.');
 						setTimeout(() => process.exit(1), 1000);
+					} else {
+					return;e.error('Exceeded max retries for stream errors — exiting to allow supervisor restart.');
+				}	setTimeout(() => process.exit(1), 1000);
 					}
-					return;
-				}
-
 				// Default reconnect path for recoverable disconnects
 				if (shouldReconnect && retryCount < maxRetries) {
 					retryCount++;
-					try { sock.end?.(); } catch (e) { /* ignore */ }
-					setTimeout(() => {
+					try { sock.end?.(); } catch (e) { /* ignore */ }ects
+					setTimeout(() => { && retryCount < maxRetries) {
 						isConnecting = false;
-						connectToWhatsApp();
+						connectToWhatsApp(); catch (e) { /* ignore */ }
 					}, config.reconnectDelay ?? 5000);
-				} else {
+				} else {ecting = false;
 					console.error('[WA-BOT] Max reconnect attempts reached. Exiting.');
 					setTimeout(() => process.exit(1), 1000);
-				}
-			} else if (connection === 'open') {
-				connectionStatus = 'connected';
+				} else {
+			} else if (connection === 'open') {nect attempts reached. Exiting.');
+				connectionStatus = 'connected';1), 1000);
 				qrCodeData = null;
 				botId = update?.me?.id || sock?.user?.id || botId;
 				console.log(`[WA-BOT] Connected as ${botId}`);
 			} else if (connection === 'connecting') {
+				connectionStatus = 'connecting';user?.id || botId;
+			}console.log(`[WA-BOT] Connected as ${botId}`);
+		});else if (connection === 'connecting') {
 				connectionStatus = 'connecting';
-			}
-		});
-
 		// Message handler with all commands
 		sock.ev.on('messages.upsert', async ({ messages }) => {
 			const m = messages[0];
-			if (!m?.message) return;
-
+			if (!m?.message) return;ll commands
+		sock.ev.on('messages.upsert', async ({ messages }) => {
 			const messageType = Object.keys(m.message)[0];
 			const messageContent = m.message[messageType];
 
 			// extract plain text for common message types
-			let text = '';
+			let text = '';ontent = m.message[messageType];
 			if (messageType === 'conversation') text = messageContent.conversation || '';
 			else if (messageType === 'extendedTextMessage') text = messageContent.text || messageContent?.contextInfo?.quotedMessage?.conversation || '';
 			else text = (messageContent?.caption || messageContent?.text) || '';
-
-			// normalize prefix and command
-			const prefix = config?.commands?.prefix ?? '.';
+			if (messageType === 'conversation') text = messageContent.conversation || '';
+			// normalize prefix and commanddedTextMessage') text = messageContent.text || messageContent?.contextInfo?.quotedMessage?.conversation || '';
+			const prefix = config?.commands?.prefix ?? '.';Content?.text) || '';
 			const isCommand = text.startsWith(prefix);
 			const parts = isCommand ? text.slice(prefix.length).trim().split(/\s+/) : [];
-			const cmd = parts[0]?.toLowerCase();
-			const args = parts.slice(1).join(' ');
-
+			const cmd = parts[0]?.toLowerCase();fix ?? '.';
+			const args = parts.slice(1).join(' ');ix);
+			const parts = isCommand ? text.slice(prefix.length).trim().split(/\s+/) : [];
 			// Only respond to commands from self
-			if (!isCommand || !m.key.fromMe) {
+			if (!isCommand || !m.key.fromMe) { ');
 				// Auto-read functionality for non-command messages
 				if (autoReadEnabled && !m.key.fromMe && m.key.remoteJid) {
-					try {
-						await sock.readMessages([m.key]);
-					} catch (e) {
+					try {Command || !m.key.fromMe) {
+						await sock.readMessages([m.key]);command messages
+					} catch (e) {abled && !m.key.fromMe && m.key.remoteJid) {
 						console.error('Auto-read error:', e);
-					}
+					}await sock.readMessages([m.key]);
+				}} catch (e) {
+				return;le.error('Auto-read error:', e);
+			}	}
 				}
-				return;
-			}
-
-			try {
+			try {rn;
 				// Handle .autoread command
 				if (cmd === 'autoread') {
 					autoReadEnabled = !autoReadEnabled;
@@ -565,137 +565,140 @@ async function connectToWhatsApp() {
 					const emoji = autoReadEnabled ? '✅' : '❌';
 					const replyText = `${emoji} Auto Read has been *${statusText}*.`;
 					await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
-					return;
-				}
-
+					return;moji = autoReadEnabled ? '✅' : '❌';
+				}const replyText = `${emoji} Auto Read has been *${statusText}*.`;
+					await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
 				// Handle .online command
 				if (cmd === 'online') {
 					await sock.sendPresenceUpdate('available');
 					await sock.sendMessage(m.key.remoteJid, { text: '🟢 WhatsApp status set to *Online*' }, { quoted: m });
 					console.log('[WA-BOT] Presence updated to: available');
-					return;
-				}
-
+					return;ock.sendPresenceUpdate('available');
+				}await sock.sendMessage(m.key.remoteJid, { text: '🟢 WhatsApp status set to *Online*' }, { quoted: m });
+					console.log('[WA-BOT] Presence updated to: available');
 				// Handle .offline command
 				if (cmd === 'offline') {
 					await sock.sendPresenceUpdate('unavailable');
 					await sock.sendMessage(m.key.remoteJid, { text: '🔴 WhatsApp status set to *Offline*' }, { quoted: m });
 					console.log('[WA-BOT] Presence updated to: unavailable');
-					return;
-				}
-
+					return;ock.sendPresenceUpdate('unavailable');
+				}await sock.sendMessage(m.key.remoteJid, { text: '🔴 WhatsApp status set to *Offline*' }, { quoted: m });
+					console.log('[WA-BOT] Presence updated to: unavailable');
 				// Handle .panel command
 				if (cmd === 'panel') {
 					const panelText = 
 `╔═════════════════════════════╗
 ║   CloudNextra Bot — Panel   ║
 ╚═════════════════════════════╝
-
-📊 *Current Status:*
+`╔═════════════════════════════╗
+📊 *Current Status:*— Panel   ║
 • Auto Read: ${autoReadEnabled ? '✅ ON' : '❌ OFF'}
 • Bot Status: 🟢 Online
-
-🛠️ *Available Commands:*
+📊 *Current Status:*
+🛠️ *Available Commands:*abled ? '✅ ON' : '❌ OFF'}
 • ${prefix}autoread - Toggle auto status view
 • ${prefix}online - Set WhatsApp to online
 • ${prefix}offline - Set WhatsApp to offline
+• ${prefix}self <text> - Echo text backs view
+• ${prefix}menu - Show main menu to online
+• ${prefix}panel - Show this panelto offline
 • ${prefix}self <text> - Echo text back
-• ${prefix}menu - Show main menu
-• ${prefix}panel - Show this panel
-
 Commands work only in self-chat for security.`;
 					await sock.sendMessage(m.key.remoteJid, { text: panelText }, { quoted: m });
 					return;
-				}
-
+				}nds work only in self-chat for security.`;
+					await sock.sendMessage(m.key.remoteJid, { text: panelText }, { quoted: m });
 				// Handle .self command
 				if (cmd === 'self') {
 					const replyText = args || 'Usage: .self <message>';
 					await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
-					return;
-				}
-
+					return;=== 'self') {
+				}const replyText = args || 'Usage: .self <message>';
+					await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
 				// Handle .menu and .help commands
 				if (cmd === 'menu' || cmd === 'help') {
 					const menuText = 
-`╔═════════════════════════════╗
-║   CloudNextra Bot — Menu    ║
+`╔═════════════════════════════╗mmands
+║   CloudNextra Bot — Menu    ║== 'help') {
 ╚═════════════════════════════╝
-
-🤖 *Main Commands:*
+`╔═════════════════════════════╗
+🤖 *Main Commands:* — Menu    ║
 • ${prefix}menu - Show this menu
 • ${prefix}panel - Show control panel
 • ${prefix}self <text> - Echo text to this chat
-
-⚙️ *Settings:*
-• ${prefix}autoread - Toggle auto status view
+• ${prefix}menu - Show this menu
+⚙️ *Settings:*el - Show control panel
+• ${prefix}autoread - Toggle auto status viewat
 • ${prefix}online - Set WhatsApp to online
 • ${prefix}offline - Set WhatsApp to offline
-
-💡 *Usage:*
+• ${prefix}autoread - Toggle auto status view
+💡 *Usage:*online - Set WhatsApp to online
 Send a message starting with "${prefix}" followed by a command.
 Commands work only in self-chat for security.
-
-Made with ❤️ by CloudNextra`;
+💡 *Usage:*
+Made with ❤️ by CloudNextra`;"${prefix}" followed by a command.
 					await sock.sendMessage(m.key.remoteJid, { text: menuText }, { quoted: m });
 					return;
-				}
-
+				}with ❤️ by CloudNextra`;
+					await sock.sendMessage(m.key.remoteJid, { text: menuText }, { quoted: m });
 				// Unknown command
 				if (cmd) {
 					await sock.sendMessage(m.key.remoteJid, { 
 						text: `❓ Unknown command: *${cmd}*\nType ${prefix}menu to see available commands.` 
 					}, { quoted: m });
-				}
-
-			} catch (error) {
+				}await sock.sendMessage(m.key.remoteJid, { 
+						text: `❓ Unknown command: *${cmd}*\nType ${prefix}menu to see available commands.` 
+			} catch (error) {});
 				console.error('[WA-BOT] Command error:', error);
 				await sock.sendMessage(m.key.remoteJid, { 
 					text: '❌ An error occurred while processing your command.' 
-				}, { quoted: m });
-			}
-
+				}, { quoted: m });-BOT] Command error:', error);
+			}await sock.sendMessage(m.key.remoteJid, { 
+					text: '❌ An error occurred while processing your command.' 
 			// Log received messages
 			console.log('[WA-BOT] Command executed:', {
 				from: m.key.remoteJid,
-				command: cmd,
-				fromSelf: m.key.fromMe
-			});
-		});
-	} catch (err) {
+				command: cmd,d messages
+				fromSelf: m.key.fromMeommand executed:', {
+			});om: m.key.remoteJid,
+		});ommand: cmd,
+	} catch (err) {key.fromMe
 		connectionStatus = 'error';
 		qrCodeData = null;
 		console.error('[WA-BOT] Connection error:', err);
 		// on unexpected error try again unless maxed out
-		retryCount++;
-		if (retryCount >= maxRetries) {
+		retryCount++;null;
+		if (retryCount >= maxRetries) {ion error:', err);
 			console.error('[WA-BOT] Max retries reached. Exiting.');
 			setTimeout(() => process.exit(1), 1000);
-		} else {
-			isConnecting = false;
+		} else {yCount >= maxRetries) {
+			isConnecting = false;T] Max retries reached. Exiting.');
 			setTimeout(connectToWhatsApp, config.reconnectDelay ?? 5000);
-		}
-	} finally {
+		} else {
+	} finally {ing = false;
+		isConnecting = false;WhatsApp, config.reconnectDelay ?? 5000);
+	}}
+}} finally {
 		isConnecting = false;
-	}
-}
-
 // Add error handler
 process.on('unhandledRejection', error => {
 	console.log('[WA-BOT] Unhandled rejection:', error);
-});
-
-// Start with error handling
+});Add error handler
+process.on('unhandledRejection', error => {
+// Start with error handlingdled rejection:', error);
 connectToWhatsApp().catch(err => {
 	console.error('[WA-BOT] Fatal error:', err);
-	process.exit(1);
-});
-process.on('unhandledRejection', error => {
+	process.exit(1);or handling
+});nectToWhatsApp().catch(err => {
+process.on('unhandledRejection', error => {);
 	console.log('[WA-BOT] Unhandled rejection:', error);
 });
-
-// Start with error handling
+process.on('unhandledRejection', error => {
+// Start with error handlingdled rejection:', error);
 connectToWhatsApp().catch(err => {
+	console.error('[WA-BOT] Fatal error:', err);
+	process.exit(1);or handling
+});nectToWhatsApp().catch(err => {
 	console.error('[WA-BOT] Fatal error:', err);
 	process.exit(1);
 });

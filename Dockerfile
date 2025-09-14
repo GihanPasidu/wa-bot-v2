@@ -16,8 +16,11 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Remove lock file and install fresh (for first-time setup)
+RUN rm -f package-lock.json && \
+    npm install --omit=dev && \
+    npm shrinkwrap && \
+    mv npm-shrinkwrap.json package-lock.json
 
 # Copy application code
 COPY . .

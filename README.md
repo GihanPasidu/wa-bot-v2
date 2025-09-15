@@ -39,18 +39,18 @@ A professional WhatsApp automation bot built with Baileys library, featuring **Q
 
 | Command | Description |
 |---------|-------------|
-| `.panel` | Show control panel |
-| `.autoread` | Toggle auto-read for status updates only |
+| `.info` | Show bot information and statistics |
+| `.autoview` | Toggle auto-view for status updates |
 | `.online` | Set presence to online |
 | `.offline` | Set presence to offline |
 
-## 📊 Auto-Read Feature
+## 📊 Auto-View Feature
 
-The auto-read feature is designed to **only read status updates**, not regular messages:
+The auto-view feature is designed to **only view status updates**, not regular messages:
 
-- ✅ **Reads:** WhatsApp status updates automatically
-- ❌ **Doesn't read:** Regular chat messages
-- 🔧 **Toggle:** Use `.autoread` command to enable/disable
+- ✅ **Views:** WhatsApp status updates automatically
+- ❌ **Doesn't view:** Regular chat messages  
+- 🔧 **Toggle:** Use `.autoview` command to enable/disable
 
 This ensures your privacy while keeping up with status updates from contacts.
 

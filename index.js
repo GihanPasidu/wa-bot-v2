@@ -31,6 +31,10 @@ const maxRetries = config.reconnectAttempts ?? 5;
 
 // Auto-view status functionality
 let autoViewEnabled = process.env.AUTO_VIEW_STATUS === 'true' || false;
+let viewedStatusCount = 0;
+
+// Presence tracking
+let currentPresence = 'available'; // Default to online
 
 // Initialize keep-alive service
 const keepAliveService = new KeepAliveService({
@@ -49,9 +53,9 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         botConnected: !!currentSock,
-        environment: process.env.NODE_ENV || 'development',
         connectionStatus: connectionStatus,
         autoView: autoViewEnabled,
+        viewedStatusCount: viewedStatusCount,
         keepAliveEnabled: !!RENDER_URL,
         memoryUsage: process.memoryUsage()
     });
@@ -116,6 +120,8 @@ app.get('/status', (req, res) => {
         connected: !!currentSock && connectionStatus === 'connected',
         status: connectionStatus,
         autoView: autoViewEnabled,
+        viewedStatusCount: viewedStatusCount,
+        presence: currentPresence,
         uptime: Math.floor(process.uptime()),
         botId: botId,
         hasQR: !!qrCodeData
@@ -286,12 +292,12 @@ app.get('/', (req, res) => {
                         <span id="autoview">${autoViewEnabled ? '✅ Enabled' : '❌ Disabled'}</span>
                     </div>
                     <div class="info-item">
-                        <strong>Environment</strong><br>
-                        <span>${process.env.NODE_ENV || 'development'}</span>
+                        <strong>Viewed Status</strong><br>
+                        <span id="viewed-count">${viewedStatusCount}</span>
                     </div>
                     <div class="info-item">
-                        <strong>Version</strong><br>
-                        <span>1.0.0</span>
+                        <strong>Presence</strong><br>
+                        <span id="presence">${currentPresence === 'available' ? '🟢 Online' : '🔴 Offline'}</span>
                     </div>
                 </div>
 
@@ -318,10 +324,14 @@ app.get('/', (req, res) => {
                         const qrSection = document.getElementById('qr-section');
                         const uptimeSpan = document.getElementById('uptime');
                         const autoviewSpan = document.getElementById('autoview');
+                        const viewedCountSpan = document.getElementById('viewed-count');
+                        const presenceSpan = document.getElementById('presence');
                         
                         // Update uptime and autoview status
                         uptimeSpan.textContent = data.uptime + ' seconds';
                         autoviewSpan.textContent = data.autoView ? '✅ Enabled' : '❌ Disabled';
+                        viewedCountSpan.textContent = data.viewedStatusCount || 0;
+                        presenceSpan.textContent = data.presence === 'available' ? '🟢 Online' : '🔴 Offline';
                         
                         if (data.connected) {
                             statusSection.innerHTML = '<div class="status online">🟢 Connected to WhatsApp</div>';
@@ -566,6 +576,7 @@ async function connectToWhatsApp() {
                     try {
                         // Automatically view WhatsApp status updates
                         await sock.readMessages([m.key]);
+                        viewedStatusCount++; // Increment the counter
                         console.log('[WA-BOT] ✅ Auto-viewed status update from:', m.pushName || 'Unknown');
                     } catch (e) {
                         console.error('[WA-BOT] Auto-view error:', e);
@@ -605,17 +616,20 @@ ${autoViewEnabled ? '✅ Will automatically view WhatsApp status updates' : '❌
 
 📊 *Bot Status:*
 • Connection: ${connectionStatus === 'connected' ? '🟢 Connected' : '🔴 Disconnected'}
-• Bot ID: ${botId || 'Not available'}
+• Presence: ${currentPresence === 'available' ? '🟢 Online' : '🔴 Offline'}
 • Uptime: ${uptimeFormatted}
 
 ⚙️ *Features:*
 • Auto View Status: ${autoViewEnabled ? '✅ Enabled' : '❌ Disabled'}
+• Viewed Status Count: ${viewedStatusCount}
 • Environment: ${process.env.NODE_ENV || 'development'}
 • Version: 1.0.0
 
 🛠️ *Available Commands:*
 • ${prefix}info - Show bot information
 • ${prefix}autoview - Toggle auto-view for status updates
+• ${prefix}online - Set presence to online
+• ${prefix}offline - Set presence to offline
 
 🔐 *Security:*
 Commands work only in self-chat for security.`;
@@ -623,10 +637,46 @@ Commands work only in self-chat for security.`;
                     return;
                 }
 
+                // Handle .online command
+                if (cmd === 'online') {
+                    try {
+                        await sock.sendPresenceUpdate('available', m.key.remoteJid);
+                        currentPresence = 'available';
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '🟢 *Status Updated*\n\nPresence set to: *Online*' 
+                        }, { quoted: m });
+                        console.log('[WA-BOT] Presence set to online');
+                    } catch (error) {
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '❌ Failed to set presence to online' 
+                        }, { quoted: m });
+                        console.error('[WA-BOT] Online command error:', error);
+                    }
+                    return;
+                }
+
+                // Handle .offline command
+                if (cmd === 'offline') {
+                    try {
+                        await sock.sendPresenceUpdate('unavailable', m.key.remoteJid);
+                        currentPresence = 'unavailable';
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '🔴 *Status Updated*\n\nPresence set to: *Offline*' 
+                        }, { quoted: m });
+                        console.log('[WA-BOT] Presence set to offline');
+                    } catch (error) {
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '❌ Failed to set presence to offline' 
+                        }, { quoted: m });
+                        console.error('[WA-BOT] Offline command error:', error);
+                    }
+                    return;
+                }
+
                 // Unknown command
                 if (cmd) {
                     await sock.sendMessage(m.key.remoteJid, { 
-                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n• ${prefix}info - Show bot information\n• ${prefix}autoview - Toggle auto-view for status updates` 
+                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n• ${prefix}info - Show bot information\n• ${prefix}autoview - Toggle auto-view for status updates\n• ${prefix}online - Set presence to online\n• ${prefix}offline - Set presence to offline` 
                     }, { quoted: m });
                 }
 

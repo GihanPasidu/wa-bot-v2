@@ -140,8 +140,8 @@ Apache License 2.0 - see [LICENSE](LICENSE) file
 
 - 🐛 [Report bugs](https://github.com/yourusername/WA-BOT/issues)
 - 💬 [Discussions](https://github.com/yourusername/WA-BOT/discussions)
-- 📧 Contact: support@cloudnextra.com
+- 📧 Contact: contact@cloudnextra.dev
 
 ---
 
-Made with ❤️ by [CloudNextra](https://cloudnextra.com)
+Made by [CloudNextra](https://cloudnextra.dev)

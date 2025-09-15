@@ -1,12 +1,40 @@
 # 🤖 CloudNextra WhatsApp Bot
 
-A professional WhatsApp automation bot built with Baileys library, featuring **QR code web interface** and **status auto-read** functionality.
+A professional Wha## 📥 Status Download Feature
+
+The bot now includes a **contact-specific** status download feature:
+
+- ✅ **Tracks:** All incoming status posts from contacts
+- 📱 **Downloads:** Images, videos, and text status posts
+- 👥 **Contact-Specific:** Download from specific contacts only
+- 💾 **Storage:** Saves to `downloads/status/` folder
+- 🎯 **Selective:** Only downloads when you request it
+- 🔄 **Management:** Auto-cleans old status posts after 24 hours
+
+### How to Use:
+1. **View Available Contacts:** Use `.contacts` to see all contacts with status posts
+2. **List Contact's Status:** Use `.statuslist ContactName` to see specific contact's posts
+3. **Download from Contact:** Use `.download ContactName` to download from specific person
+4. **Download Specific Amount:** Use `.download ContactName 3` to download 3 posts from contact
+5. **Download from All:** Use `.download 5` to download 5 posts from all contacts
+
+### Command Examples:
+```
+.contacts                    # Show all contacts with status posts
+.statuslist John            # List John's available status posts
+.download John              # Download 5 latest posts from John
+.download John 3            # Download 3 latest posts from John
+.download 10                # Download 10 posts from all contacts
+```
+
+📁 **Download Location:** `downloads/status/` bot built with Baileys library, featuring **QR code web interface** and **status auto-read** functionality.
 
 ## ✨ Features
 
 - 🔐 Multi-device WhatsApp connection
 - 📱 **QR code web interface** - No need to check terminal!
 - 📊 **Auto-read status updates** - Only reads status, not messages
+- 📥 **On-demand status download** - Download status posts with commands
 - 🌐 Beautiful web dashboard with real-time status
 - ⚡ Fast and reliable message handling
 - 🔄 Auto-reconnection with retry logic
@@ -41,10 +69,31 @@ A professional WhatsApp automation bot built with Baileys library, featuring **Q
 |---------|-------------|
 | `.info` | Show bot information and statistics |
 | `.autoview` | Toggle auto-view for status updates |
+| `.download [ContactName] [number]` | Download status posts from specific contact or all |
+| `.statuslist [ContactName]` | List available status posts (all or from specific contact) |
+| `.contacts` | Show all contacts with available status posts |
+| `.clearstatus` | Clear the status download queue |
 | `.online` | Set presence to online |
 | `.offline` | Set presence to offline |
 
-## 📊 Auto-View Feature
+## � Status Download Feature
+
+The bot now includes an on-demand status download feature:
+
+- ✅ **Tracks:** All incoming status posts from contacts
+- 📱 **Downloads:** Images, videos, and text status posts
+- 💾 **Storage:** Saves to `downloads/status/` folder
+- 🎯 **Selective:** Only downloads when you request it
+- 🔄 **Management:** Auto-cleans old status posts after 24 hours
+
+### How to Use:
+1. **View Available Status:** Use `.statuslist` to see available posts
+2. **Download Status:** Use `.download` to download up to 5 posts, or `.download 10` for specific amount
+3. **Clear Queue:** Use `.clearstatus` to clear the status list
+
+📁 **Download Location:** `downloads/status/`
+
+## �📊 Auto-View Feature
 
 The auto-view feature is designed to **only view status updates**, not regular messages:
 

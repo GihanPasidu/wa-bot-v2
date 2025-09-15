@@ -9,6 +9,10 @@
     "AUTO_VIEW_STATUS": {
       "description": "Enable auto-view for status updates (true/false)",
       "required": false
+    },
+    "STATUS_DOWNLOAD": {
+      "description": "Enable status download tracking (true/false)",
+      "required": false
     }
   },
 

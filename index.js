@@ -3,12 +3,10 @@ require('./polyfill');
 
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const fs = require('fs');
-const path = require('path');
 const { Boom } = require('@hapi/boom');
 const config = require('./config');
 const express = require('express');
 const QRCode = require('qrcode');
-const cron = require('node-cron');
 const KeepAliveService = require('./keep-alive');
 
 // Express app for health checks
@@ -31,8 +29,8 @@ let retryCount = 0;
 let botId = null;
 const maxRetries = config.reconnectAttempts ?? 5;
 
-// Auto-read state (can be set via environment variable)
-let autoReadEnabled = process.env.AUTO_READ_STATUS === 'true' || false;
+// Auto-view status functionality
+let autoViewEnabled = process.env.AUTO_VIEW_STATUS === 'true' || false;
 
 // Initialize keep-alive service
 const keepAliveService = new KeepAliveService({
@@ -53,6 +51,7 @@ app.get('/health', (req, res) => {
         botConnected: !!currentSock,
         environment: process.env.NODE_ENV || 'development',
         connectionStatus: connectionStatus,
+        autoView: autoViewEnabled,
         keepAliveEnabled: !!RENDER_URL,
         memoryUsage: process.memoryUsage()
     });
@@ -116,7 +115,7 @@ app.get('/status', (req, res) => {
     res.json({
         connected: !!currentSock && connectionStatus === 'connected',
         status: connectionStatus,
-        autoRead: autoReadEnabled,
+        autoView: autoViewEnabled,
         uptime: Math.floor(process.uptime()),
         botId: botId,
         hasQR: !!qrCodeData
@@ -283,8 +282,8 @@ app.get('/', (req, res) => {
                         <span id="uptime">${Math.floor(process.uptime())} seconds</span>
                     </div>
                     <div class="info-item">
-                        <strong>Auto-read</strong><br>
-                        <span id="autoread">${autoReadEnabled ? '✅ Enabled' : '❌ Disabled'}</span>
+                        <strong>Auto View</strong><br>
+                        <span id="autoview">${autoViewEnabled ? '✅ Enabled' : '❌ Disabled'}</span>
                     </div>
                     <div class="info-item">
                         <strong>Environment</strong><br>
@@ -318,11 +317,11 @@ app.get('/', (req, res) => {
                         const statusSection = document.getElementById('status-section');
                         const qrSection = document.getElementById('qr-section');
                         const uptimeSpan = document.getElementById('uptime');
-                        const autoreadSpan = document.getElementById('autoread');
+                        const autoviewSpan = document.getElementById('autoview');
                         
-                        // Update uptime
+                        // Update uptime and autoview status
                         uptimeSpan.textContent = data.uptime + ' seconds';
-                        autoreadSpan.textContent = data.autoRead ? '✅ Enabled' : '❌ Disabled';
+                        autoviewSpan.textContent = data.autoView ? '✅ Enabled' : '❌ Disabled';
                         
                         if (data.connected) {
                             statusSection.innerHTML = '<div class="status online">🟢 Connected to WhatsApp</div>';
@@ -406,7 +405,6 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`[WA-BOT] Health server running on port ${PORT}`);
 });
 
-// Auto-read functionality
 async function connectToWhatsApp() {
     // avoid parallel connects
     if (isConnecting) return;
@@ -563,104 +561,72 @@ async function connectToWhatsApp() {
 
             // Only respond to commands from self
             if (!isCommand || !m.key.fromMe) {
-                // Auto-read functionality - ONLY for status updates, NEVER regular messages
-                if (autoReadEnabled && !m.key.fromMe && m.key.remoteJid) {
+                // Auto-view status functionality - only for status updates, not regular messages
+                if (autoViewEnabled && !m.key.fromMe && m.key.remoteJid === 'status@broadcast') {
                     try {
-                        // Check if it's a status update (status@broadcast)
-                        const isStatusUpdate = m.key.remoteJid === 'status@broadcast';
-                        
-                        // IMPORTANT: Only auto-read status updates, never regular chat messages
-                        if (isStatusUpdate) {
-                            await sock.readMessages([m.key]);
-                            console.log('[WA-BOT] ✅ Auto-read status update from:', m.pushName || 'Unknown');
-                        } else {
-                            // Explicitly log that we're NOT reading regular messages
-                            console.log('[WA-BOT] 🔒 Skipped auto-read for regular message (privacy protected)');
-                        }
+                        // Automatically view WhatsApp status updates
+                        await sock.readMessages([m.key]);
+                        console.log('[WA-BOT] ✅ Auto-viewed status update from:', m.pushName || 'Unknown');
                     } catch (e) {
-                        console.error('[WA-BOT] Auto-read error:', e);
+                        console.error('[WA-BOT] Auto-view error:', e);
                     }
                 }
                 return;
             }
 
             try {
-                // Handle .autoread command
-                if (cmd === 'autoread') {
-                    autoReadEnabled = !autoReadEnabled;
-                    const statusText = autoReadEnabled ? 'enabled' : 'disabled';
-                    const emoji = autoReadEnabled ? '✅' : '❌';
-                    const replyText = `${emoji} Auto Read Status has been *${statusText}*
+                // Handle .autoview command
+                if (cmd === 'autoview') {
+                    autoViewEnabled = !autoViewEnabled;
+                    const statusText = autoViewEnabled ? 'enabled' : 'disabled';
+                    const emoji = autoViewEnabled ? '✅' : '❌';
+                    const replyText = `${emoji} Auto View Status has been *${statusText}*
 
-� *Privacy Protection:*
-✅ Will auto-read: WhatsApp status updates only
-❌ Will NOT read: Regular chat messages
-❌ Will NOT read: Group messages
-❌ Will NOT read: Private messages
+👀 *Auto View Feature:*
+${autoViewEnabled ? '✅ Will automatically view WhatsApp status updates' : '❌ Will NOT automatically view status updates'}
 
-💡 This feature respects your privacy by only reading status updates, never your actual conversations.`;
+💡 This feature automatically marks status updates as viewed, similar to when you open WhatsApp and see status updates.`;
                     await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
                     return;
                 }
 
-                // Handle .panel command
-                if (cmd === 'panel') {
-                    const panelText = 
+                // Handle .info command
+                if (cmd === 'info') {
+                    const uptimeSeconds = Math.floor(process.uptime());
+                    const hours = Math.floor(uptimeSeconds / 3600);
+                    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+                    const seconds = uptimeSeconds % 60;
+                    const uptimeFormatted = `${hours}h ${minutes}m ${seconds}s`;
+                    
+                    const infoText = 
 `╔═════════════════════════════╗
-║   CloudNextra Bot — Panel   ║
+║   CloudNextra Bot — Info    ║
 ╚═════════════════════════════╝
 
-📊 *Current Status:*
-• Auto Read Status: ${autoReadEnabled ? '✅ ON (Status Only)' : '❌ OFF'}
-• Bot Status: 🟢 Online
+📊 *Bot Status:*
+• Connection: ${connectionStatus === 'connected' ? '🟢 Connected' : '🔴 Disconnected'}
+• Bot ID: ${botId || 'Not available'}
+• Uptime: ${uptimeFormatted}
+
+⚙️ *Features:*
+• Auto View Status: ${autoViewEnabled ? '✅ Enabled' : '❌ Disabled'}
+• Environment: ${process.env.NODE_ENV || 'development'}
+• Version: 1.0.0
 
 🛠️ *Available Commands:*
-• ${prefix}panel - Show control panel
-• ${prefix}autoread - Toggle auto-read for status updates only
-• ${prefix}online - Set presence to online
-• ${prefix}offline - Set presence to offline
+• ${prefix}info - Show bot information
+• ${prefix}autoview - Toggle auto-view for status updates
 
-� *Privacy Protection:*
-Auto-read ONLY reads status updates, NEVER your messages.
+🔐 *Security:*
 Commands work only in self-chat for security.`;
-                    await sock.sendMessage(m.key.remoteJid, { text: panelText }, { quoted: m });
-                    return;
-                }
-
-                // Handle .online command
-                if (cmd === 'online') {
-                    try {
-                        await sock.sendPresenceUpdate('available');
-                        await sock.sendMessage(m.key.remoteJid, { 
-                            text: '✅ Presence set to *Online*' 
-                        }, { quoted: m });
-                    } catch (error) {
-                        await sock.sendMessage(m.key.remoteJid, { 
-                            text: '❌ Failed to set presence to online' 
-                        }, { quoted: m });
-                    }
-                    return;
-                }
-
-                // Handle .offline command
-                if (cmd === 'offline') {
-                    try {
-                        await sock.sendPresenceUpdate('unavailable');
-                        await sock.sendMessage(m.key.remoteJid, { 
-                            text: '✅ Presence set to *Offline*' 
-                        }, { quoted: m });
-                    } catch (error) {
-                        await sock.sendMessage(m.key.remoteJid, { 
-                            text: '❌ Failed to set presence to offline' 
-                        }, { quoted: m });
-                    }
+                    await sock.sendMessage(m.key.remoteJid, { text: infoText }, { quoted: m });
                     return;
                 }
 
                 // Unknown command
                 if (cmd) {
                     await sock.sendMessage(m.key.remoteJid, { 
-                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n• ${prefix}panel - Show control panel\n• ${prefix}autoread - Toggle auto-read for status updates only\n• ${prefix}online - Set presence to online\n• ${prefix}offline - Set presence to offline` 
+                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n• ${prefix}info - Show bot information\n• ${prefix}autoview - Toggle auto-view for status updates` 
                     }, { quoted: m });
                 }
 

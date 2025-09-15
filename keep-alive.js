@@ -1,5 +1,3 @@
-const cron = require('node-cron');
-
 class KeepAliveService {
     constructor(options = {}) {
         this.url = options.url || process.env.RENDER_EXTERNAL_URL || process.env.RENDER_URL;
@@ -7,6 +5,7 @@ class KeepAliveService {
         this.endpoints = options.endpoints || ['/health', '/ping', '/wake'];
         this.userAgent = 'KeepAlive-Bot/1.0';
         this.timeout = options.timeout || 30000; // 30 seconds
+        this.intervalId = null;
         
         this.stats = {
             totalPings: 0,
@@ -71,11 +70,11 @@ class KeepAliveService {
             return false;
         }
 
-        // Schedule pings every N minutes
-        const cronPattern = `*/${this.interval} * * * *`;
-        cron.schedule(cronPattern, () => {
+        // Schedule pings every N minutes using setInterval
+        const intervalMs = this.interval * 60 * 1000; // Convert minutes to milliseconds
+        this.intervalId = setInterval(() => {
             this.ping();
-        });
+        }, intervalMs);
 
         // Initial ping after 1 minute
         setTimeout(() => {
@@ -87,6 +86,14 @@ class KeepAliveService {
         console.log(`[KEEP-ALIVE] 📡 Endpoints: ${this.endpoints.join(', ')}`);
         
         return true;
+    }
+
+    stop() {
+        if (this.intervalId) {
+            clearInterval(this.intervalId);
+            this.intervalId = null;
+            console.log('[KEEP-ALIVE] 🛑 Keep-alive service stopped');
+        }
     }
 
     getStats() {

@@ -6,32 +6,16 @@
   "success_url": "/",
 
   "env": {
-    "SESSION_ID": {
-      "description": "Put the session-id here.",
-      "required": true
-    },
- "NEWS_SEND_JID": {
-      "description": "Put the jid channel or group",
+    "AUTO_VIEW_STATUS": {
+      "description": "Enable auto-view for status updates (true/false)",
       "required": false
-    },
-"AUTO_NEWS_SENDER": {
-      "description": "true or false",
-      "required": false
-    } ,
-"TIKTOK_SEND_JID": {
-      "description": "Put the jid channel or group",
-      "required": false
-    } ,
-    "AUTO_TIKTOK_SENDER": {
-      "description": "true or false",
-      "required": false
-    } 
-},
+    }
+  },
 
-     "buildpacks": [
-        {
-            "url": "https://github.com/heroku/heroku-buildpack-nodejs.git"
-        }
-     ],
+  "buildpacks": [
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-nodejs.git"
+    }
+  ],
   "stack": "heroku-24"
 }

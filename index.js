@@ -307,7 +307,7 @@ app.get('/', (req, res) => {
                 </div>
 
                 <div class="footer">
-                    <p><small>Made with ❤️ by CloudNextra</small></p>
+                    <p><small>Made by CloudNextra</small></p>
                     <p><small>Last updated: <span id="last-update">${new Date().toLocaleString()}</span></small></p>
                 </div>
             </div>

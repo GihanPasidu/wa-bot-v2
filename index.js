@@ -312,7 +312,7 @@ app.get('/', (req, res) => {
                         <span id="presence">${currentPresence === 'available' ? '🟢 Online' : '🔴 Offline'}</span>
                     </div>
                     <div class="info-item">
-                        <strong>Downloaded</strong><br>
+                        <strong>Sent to Mobile</strong><br>
                         <span id="downloaded-count">${downloadedStatusCount}</span>
                     </div>
                     <div class="info-item">
@@ -440,15 +440,6 @@ app.listen(PORT, '0.0.0.0', () => {
 });
 
 // Helper functions for status download functionality
-function createDownloadDirectory() {
-    const statusDir = path.join(__dirname, 'downloads', 'status');
-    if (!fs.existsSync(statusDir)) {
-        fs.mkdirSync(statusDir, { recursive: true });
-        console.log('[WA-BOT] Created status download directory:', statusDir);
-    }
-    return statusDir;
-}
-
 function cleanOldStatusPosts() {
     // Clean status posts older than 24 hours (WhatsApp status duration)
     const now = Date.now();
@@ -485,10 +476,8 @@ function addStatusPost(message, senderInfo) {
     console.log(`[WA-BOT] Added status post from ${senderInfo.pushName || 'Unknown'}. Total available: ${availableStatusPosts.size}`);
 }
 
-async function downloadStatusPost(sock, statusInfo, downloadDir) {
+async function downloadStatusPost(sock, statusInfo, remoteJid) {
     try {
-        const fileName = `status_${statusInfo.sender.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`;
-        let filePath;
         let success = false;
 
         if (statusInfo.messageType === 'imageMessage') {
@@ -498,8 +487,12 @@ async function downloadStatusPost(sock, statusInfo, downloadDir) {
                 {},
                 { logger: console, reuploadRequest: sock.updateMediaMessage }
             );
-            filePath = path.join(downloadDir, `${fileName}.jpg`);
-            fs.writeFileSync(filePath, buffer);
+            
+            // Send image directly to WhatsApp instead of saving
+            await sock.sendMessage(remoteJid, { 
+                image: buffer,
+                caption: `📸 *Status from:* ${statusInfo.sender}\n⏰ *Time:* ${new Date(statusInfo.timestamp).toLocaleString()}`
+            });
             success = true;
         } else if (statusInfo.messageType === 'videoMessage') {
             const buffer = await downloadMediaMessage(
@@ -508,26 +501,33 @@ async function downloadStatusPost(sock, statusInfo, downloadDir) {
                 {},
                 { logger: console, reuploadRequest: sock.updateMediaMessage }
             );
-            filePath = path.join(downloadDir, `${fileName}.mp4`);
-            fs.writeFileSync(filePath, buffer);
+            
+            // Send video directly to WhatsApp instead of saving
+            await sock.sendMessage(remoteJid, { 
+                video: buffer,
+                caption: `🎥 *Status from:* ${statusInfo.sender}\n⏰ *Time:* ${new Date(statusInfo.timestamp).toLocaleString()}`
+            });
             success = true;
         } else if (statusInfo.messageType === 'extendedTextMessage' || statusInfo.messageType === 'conversation') {
             const text = statusInfo.message.extendedTextMessage?.text || statusInfo.message.conversation || '';
-            filePath = path.join(downloadDir, `${fileName}.txt`);
-            fs.writeFileSync(filePath, `Status from: ${statusInfo.sender}\nTime: ${new Date(statusInfo.timestamp).toLocaleString()}\n\n${text}`);
+            
+            // Send text status directly to WhatsApp
+            await sock.sendMessage(remoteJid, { 
+                text: `📝 *Text Status from:* ${statusInfo.sender}\n⏰ *Time:* ${new Date(statusInfo.timestamp).toLocaleString()}\n\n${text}`
+            });
             success = true;
         }
 
         if (success) {
             downloadedStatusCount++;
-            console.log(`[WA-BOT] Downloaded status post: ${path.basename(filePath)}`);
-            return filePath;
+            console.log(`[WA-BOT] Sent status post from: ${statusInfo.sender}`);
+            return true;
         }
         
-        return null;
+        return false;
     } catch (error) {
-        console.error('[WA-BOT] Error downloading status post:', error);
-        return null;
+        console.error('[WA-BOT] Error sending status post:', error);
+        return false;
     }
 }
 
@@ -734,7 +734,6 @@ ${autoViewEnabled ? '✅ Will automatically view WhatsApp status updates' : '❌
                         return;
                     }
 
-                    const downloadDir = createDownloadDirectory();
                     let downloadCount = 0;
                     let maxDownloads = 5;
                     let targetContact = null;
@@ -775,33 +774,33 @@ ${autoViewEnabled ? '✅ Will automatically view WhatsApp status updates' : '❌
                         }
                         
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: `📥 *Starting Download*\n\nDownloading up to ${maxDownloads} status posts from *${filteredPosts[0].sender}*...\n\n⏳ Please wait...` 
+                            text: `� *Sending to Mobile*\n\nSending up to ${maxDownloads} status posts from *${filteredPosts[0].sender}*...\n\n⏳ Please wait...` 
                         }, { quoted: m });
                     } else {
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: `📥 *Starting Download*\n\nDownloading up to ${maxDownloads} status posts from all contacts...\n\n⏳ Please wait...` 
+                            text: `� *Sending to Mobile*\n\nSending up to ${maxDownloads} status posts from all contacts...\n\n⏳ Please wait...` 
                         }, { quoted: m });
                     }
 
-                    // Sort by timestamp (newest first) and download
+                    // Sort by timestamp (newest first) and send to mobile
                     const sortedPosts = filteredPosts
                         .sort((a, b) => b.timestamp - a.timestamp)
                         .slice(0, maxDownloads);
 
                     for (const statusInfo of sortedPosts) {
-                        const filePath = await downloadStatusPost(sock, statusInfo, downloadDir);
-                        if (filePath) {
+                        const success = await downloadStatusPost(sock, statusInfo, m.key.remoteJid);
+                        if (success) {
                             downloadCount++;
                         }
                     }
 
-                    const downloadText = `✅ *Download Complete*
+                    const downloadText = `✅ *Send Complete*
 
 📊 *Results:*
-• Downloaded: ${downloadCount} status posts${targetContact ? ` from *${filteredPosts[0]?.sender || targetContact}*` : ''}
+• Sent to mobile: ${downloadCount} status posts${targetContact ? ` from *${filteredPosts[0]?.sender || targetContact}*` : ''}
 • Failed: ${sortedPosts.length - downloadCount}
 • Available from ${targetContact ? 'contact' : 'all contacts'}: ${filteredPosts.length}
-• Download Location: downloads/status/`;
+• Status posts sent directly to your WhatsApp 📱`;
 
                     await sock.sendMessage(m.key.remoteJid, { text: downloadText }, { quoted: m });
                     return;
@@ -985,7 +984,7 @@ ${autoViewEnabled ? '✅ Will automatically view WhatsApp status updates' : '❌
 • Auto View Status: ${autoViewEnabled ? '✅ Enabled' : '❌ Disabled'}
 • Status Download: ${statusDownloadEnabled ? '✅ Enabled' : '❌ Disabled'}
 • Viewed Status Count: ${viewedStatusCount}
-• Downloaded Status Count: ${downloadedStatusCount}
+• Sent to Mobile Count: ${downloadedStatusCount}
 • Available for Download: ${availableStatusPosts.size}
 
 🛠️ *Available Commands:*

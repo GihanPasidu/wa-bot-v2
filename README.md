@@ -7,34 +7,41 @@ The bot now includes a **contact-specific** status download feature:
 - ✅ **Tracks:** All incoming status posts from contacts
 - 📱 **Downloads:** Images, videos, and text status posts
 - 👥 **Contact-Specific:** Download from specific contacts only
-- 💾 **Storage:** Saves to `downloads/status/` folder
-- 🎯 **Selective:** Only downloads when you request it
+## 📥 Status Send Feature
+
+The bot now includes a **contact-specific** status send feature:
+
+- ✅ **Tracks:** All incoming status posts from contacts
+- � **Sends to Mobile:** Images, videos, and text status posts directly to your WhatsApp
+- 👥 **Contact-Specific:** Send from specific contacts only
+- 🚀 **Instant Delivery:** No local storage - direct to your mobile device
+- 🎯 **Selective:** Only sends when you request it
 - 🔄 **Management:** Auto-cleans old status posts after 24 hours
 
 ### How to Use:
 1. **View Available Contacts:** Use `.contacts` to see all contacts with status posts
 2. **List Contact's Status:** Use `.statuslist ContactName` to see specific contact's posts
-3. **Download from Contact:** Use `.download ContactName` to download from specific person
-4. **Download Specific Amount:** Use `.download ContactName 3` to download 3 posts from contact
-5. **Download from All:** Use `.download 5` to download 5 posts from all contacts
+3. **Send from Contact:** Use `.download ContactName` to send from specific person
+4. **Send Specific Amount:** Use `.download ContactName 3` to send 3 posts from contact
+5. **Send from All:** Use `.download 5` to send 5 posts from all contacts
 
 ### Command Examples:
 ```
 .contacts                    # Show all contacts with status posts
 .statuslist John            # List John's available status posts
-.download John              # Download 5 latest posts from John
-.download John 3            # Download 3 latest posts from John
-.download 10                # Download 10 posts from all contacts
+.download John              # Send 5 latest posts from John to mobile
+.download John 3            # Send 3 latest posts from John to mobile
+.download 10                # Send 10 posts from all contacts to mobile
 ```
 
-📁 **Download Location:** `downloads/status/` bot built with Baileys library, featuring **QR code web interface** and **status auto-read** functionality.
+� **Delivery Method:** Status posts sent directly to your WhatsApp bot built with Baileys library, featuring **QR code web interface** and **status auto-read** functionality.
 
 ## ✨ Features
 
 - 🔐 Multi-device WhatsApp connection
 - 📱 **QR code web interface** - No need to check terminal!
 - 📊 **Auto-read status updates** - Only reads status, not messages
-- 📥 **On-demand status download** - Download status posts with commands
+- 📥 **On-demand status delivery** - Send status posts directly to mobile
 - 🌐 Beautiful web dashboard with real-time status
 - ⚡ Fast and reliable message handling
 - 🔄 Auto-reconnection with retry logic
@@ -126,8 +133,7 @@ The QR code will only appear when:
 - The previous session has expired
 
 ---
-
-Made with ❤️ by [CloudNextra](https://cloudnextra.com)
+## ⚙️ Configuration
 - Reconnection attempts
 - Command prefix
 - Keep-alive settings

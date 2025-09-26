@@ -34,11 +34,6 @@ const maxRetries = config.reconnectAttempts ?? 5;
 let autoViewEnabled = process.env.AUTO_VIEW_STATUS === 'true' || false;
 let viewedStatusCount = 0;
 
-// Status download functionality
-let statusDownloadEnabled = process.env.STATUS_DOWNLOAD === 'true' || true;
-let downloadedStatusCount = 0;
-let availableStatusPosts = new Map(); // Store available status posts for download
-
 // Presence tracking
 let currentPresence = 'available'; // Default to online
 
@@ -62,9 +57,6 @@ app.get('/health', (req, res) => {
         connectionStatus: connectionStatus,
         autoView: autoViewEnabled,
         viewedStatusCount: viewedStatusCount,
-        statusDownload: statusDownloadEnabled,
-        downloadedStatusCount: downloadedStatusCount,
-        availableStatusCount: availableStatusPosts.size,
         keepAliveEnabled: !!RENDER_URL,
         memoryUsage: process.memoryUsage()
     });
@@ -130,9 +122,6 @@ app.get('/status', (req, res) => {
         status: connectionStatus,
         autoView: autoViewEnabled,
         viewedStatusCount: viewedStatusCount,
-        statusDownload: statusDownloadEnabled,
-        downloadedStatusCount: downloadedStatusCount,
-        availableStatusCount: availableStatusPosts.size,
         presence: currentPresence,
         uptime: Math.floor(process.uptime()),
         botId: botId,
@@ -311,14 +300,6 @@ app.get('/', (req, res) => {
                         <strong>Presence</strong><br>
                         <span id="presence">${currentPresence === 'available' ? '🟢 Online' : '🔴 Offline'}</span>
                     </div>
-                    <div class="info-item">
-                        <strong>Sent to Mobile</strong><br>
-                        <span id="downloaded-count">${downloadedStatusCount}</span>
-                    </div>
-                    <div class="info-item">
-                        <strong>Available</strong><br>
-                        <span id="available-count">${availableStatusPosts.size}</span>
-                    </div>
                 </div>
 
                 <div style="text-align: center; margin: 20px 0;">
@@ -346,16 +327,12 @@ app.get('/', (req, res) => {
                         const autoviewSpan = document.getElementById('autoview');
                         const viewedCountSpan = document.getElementById('viewed-count');
                         const presenceSpan = document.getElementById('presence');
-                        const downloadedCountSpan = document.getElementById('downloaded-count');
-                        const availableCountSpan = document.getElementById('available-count');
                         
                         // Update uptime and autoview status
                         uptimeSpan.textContent = data.uptime + ' seconds';
                         autoviewSpan.textContent = data.autoView ? '✅ Enabled' : '❌ Disabled';
                         viewedCountSpan.textContent = data.viewedStatusCount || 0;
                         presenceSpan.textContent = data.presence === 'available' ? '🟢 Online' : '🔴 Offline';
-                        downloadedCountSpan.textContent = data.downloadedStatusCount || 0;
-                        availableCountSpan.textContent = data.availableStatusCount || 0;
                         
                         if (data.connected) {
                             statusSection.innerHTML = '<div class="status online">🟢 Connected to WhatsApp</div>';
@@ -982,19 +959,18 @@ ${autoViewEnabled ? '✅ Will automatically view WhatsApp status updates' : '❌
 
 ⚙️ *Features:*
 • Auto View Status: ${autoViewEnabled ? '✅ Enabled' : '❌ Disabled'}
-• Status Download: ${statusDownloadEnabled ? '✅ Enabled' : '❌ Disabled'}
 • Viewed Status Count: ${viewedStatusCount}
-• Sent to Mobile Count: ${downloadedStatusCount}
-• Available for Download: ${availableStatusPosts.size}
+• Environment: ${process.env.NODE_ENV || 'development'}
+• Version: 1.0.0
 
 🛠️ *Available Commands:*
 • ${prefix}info - Show bot information
+• ${prefix}autoview - Toggle auto-view for status updates
 • ${prefix}online - Set presence to online
 • ${prefix}offline - Set presence to offline
-• ${prefix}autoview - Toggle auto-view for status updates
-• ${prefix}statuslist - List available status posts
-• ${prefix}download [ContactName] - Download status posts
-`;
+
+🔐 *Security:*
+Commands work only in self-chat for security.`;
                     await sock.sendMessage(m.key.remoteJid, { text: infoText }, { quoted: m });
                     return;
                 }
@@ -1038,7 +1014,7 @@ ${autoViewEnabled ? '✅ Will automatically view WhatsApp status updates' : '❌
                 // Unknown command
                 if (cmd) {
                     await sock.sendMessage(m.key.remoteJid, { 
-                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n• ${prefix}info - Show bot information\n• ${prefix}autoview - Toggle auto-view for status updates\n• ${prefix}download [ContactName] [number] - Download status posts\n• ${prefix}statuslist [ContactName] - List available status posts\n• ${prefix}contacts - Show contacts with status posts\n• ${prefix}clearstatus - Clear status download queue\n• ${prefix}online - Set presence to online\n• ${prefix}offline - Set presence to offline` 
+                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n• ${prefix}info - Show bot information\n• ${prefix}autoview - Toggle auto-view for status updates\n• ${prefix}online - Set presence to online\n• ${prefix}offline - Set presence to offline` 
                     }, { quoted: m });
                 }
 

@@ -1,47 +1,13 @@
 # 🤖 CloudNextra WhatsApp Bot
 
-A professional Wha## 📥 Status Download Feature
-
-The bot now includes a **contact-specific** status download feature:
-
-- ✅ **Tracks:** All incoming status posts from contacts
-- 📱 **Downloads:** Images, videos, and text status posts
-- 👥 **Contact-Specific:** Download from specific contacts only
-## 📥 Status Send Feature
-
-The bot now includes a **contact-specific** status send feature:
-
-- ✅ **Tracks:** All incoming status posts from contacts
-- � **Sends to Mobile:** Images, videos, and text status posts directly to your WhatsApp
-- 👥 **Contact-Specific:** Send from specific contacts only
-- 🚀 **Instant Delivery:** No local storage - direct to your mobile device
-- 🎯 **Selective:** Only sends when you request it
-- 🔄 **Management:** Auto-cleans old status posts after 24 hours
-
-### How to Use:
-1. **View Available Contacts:** Use `.contacts` to see all contacts with status posts
-2. **List Contact's Status:** Use `.statuslist ContactName` to see specific contact's posts
-3. **Send from Contact:** Use `.download ContactName` to send from specific person
-4. **Send Specific Amount:** Use `.download ContactName 3` to send 3 posts from contact
-5. **Send from All:** Use `.download 5` to send 5 posts from all contacts
-
-### Command Examples:
-```
-.contacts                    # Show all contacts with status posts
-.statuslist John            # List John's available status posts
-.download John              # Send 5 latest posts from John to mobile
-.download John 3            # Send 3 latest posts from John to mobile
-.download 10                # Send 10 posts from all contacts to mobile
-```
-
-� **Delivery Method:** Status posts sent directly to your WhatsApp bot built with Baileys library, featuring **QR code web interface** and **status auto-read** functionality.
+A professional WhatsApp bot built with Baileys library, featuring **QR code web interface** and **auto-view status** functionality.
 
 ## ✨ Features
 
 - 🔐 Multi-device WhatsApp connection
 - 📱 **QR code web interface** - No need to check terminal!
-- 📊 **Auto-read status updates** - Only reads status, not messages
-- 📥 **On-demand status delivery** - Send status posts directly to mobile
+- � **Auto-view status updates** - Only views status, not messages
+- � **Presence management** - Control online/offline status
 - 🌐 Beautiful web dashboard with real-time status
 - ⚡ Fast and reliable message handling
 - 🔄 Auto-reconnection with retry logic
@@ -76,31 +42,10 @@ The bot now includes a **contact-specific** status send feature:
 |---------|-------------|
 | `.info` | Show bot information and statistics |
 | `.autoview` | Toggle auto-view for status updates |
-| `.download [ContactName] [number]` | Download status posts from specific contact or all |
-| `.statuslist [ContactName]` | List available status posts (all or from specific contact) |
-| `.contacts` | Show all contacts with available status posts |
-| `.clearstatus` | Clear the status download queue |
 | `.online` | Set presence to online |
 | `.offline` | Set presence to offline |
 
-## � Status Download Feature
-
-The bot now includes an on-demand status download feature:
-
-- ✅ **Tracks:** All incoming status posts from contacts
-- 📱 **Downloads:** Images, videos, and text status posts
-- 💾 **Storage:** Saves to `downloads/status/` folder
-- 🎯 **Selective:** Only downloads when you request it
-- 🔄 **Management:** Auto-cleans old status posts after 24 hours
-
-### How to Use:
-1. **View Available Status:** Use `.statuslist` to see available posts
-2. **Download Status:** Use `.download` to download up to 5 posts, or `.download 10` for specific amount
-3. **Clear Queue:** Use `.clearstatus` to clear the status list
-
-📁 **Download Location:** `downloads/status/`
-
-## �📊 Auto-View Feature
+## � Auto-View Feature
 
 The auto-view feature is designed to **only view status updates**, not regular messages:
 
@@ -132,21 +77,66 @@ The QR code will only appear when:
 - A new session needs to be established
 - The previous session has expired
 
----
+## 🐳 Docker Deployment
+
+### Build and Run
+
+```bash
+# Build Docker image
+npm run docker:build
+
+# Run container
+npm run docker:run
+```
+
+### Docker Compose (Optional)
+
+```yaml
+version: '3.8'
+services:
+  wa-bot:
+    build: .
+    ports:
+      - "10000:10000"
+    volumes:
+      - ./auth_info:/app/auth_info
+    environment:
+      - NODE_ENV=production
+      - AUTO_VIEW_STATUS=false
+```
+
+## ☁️ Render Deployment
+
+1. **Fork this repository**
+2. **Connect to Render**
+3. **Deploy with render.yaml**
+4. **Set environment variables:**
+   - `AUTO_VIEW_STATUS=false`
+   - `PORT=10000`
+
 ## ⚙️ Configuration
-- Reconnection attempts
-- Command prefix
-- Keep-alive settings
-- Logging levels
 
-## 📡 API Endpoints
+### Environment Variables
 
-- `GET /` - Web dashboard with QR code
-- `GET /health` - Health check
-- `GET /ping` - Keep-alive ping
-- `GET /qr` - QR code API
-- `GET /status` - Bot status
-- `GET /keep-alive-stats` - Keep-alive statistics
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AUTO_VIEW_STATUS` | `false` | Enable auto-viewing status updates |
+| `PORT` | `10000` | Server port |
+| `NODE_ENV` | `development` | Node.js environment |
+
+### Config Files
+
+- `config.js` - Bot configuration
+- `config.env` - Environment variables
+- `settings.js` - Runtime settings
+
+## 🛡️ Security
+
+- Commands only work in self-chat
+- Session data is encrypted
+- No sensitive data in logs
+- Secure Docker container
+- Auto-reconnection with retry limits
 
 ## 🔧 Development
 
@@ -167,18 +157,64 @@ WA-BOT/
 ### Scripts
 
 ```bash
-npm start          # Start the bot
-npm run dev        # Development mode
+npm start              # Start the bot
+npm run dev           # Development mode with nodemon
 npm run docker:build  # Build Docker image
 npm run docker:run    # Run Docker container
+npm test              # Run tests
 ```
 
-## 🛡️ Security
+### Development Notes
 
-- Commands only work in self-chat
-- Session data is encrypted
-- No sensitive data in logs
-- Secure Docker container
+- The bot uses Baileys v7.0.0-rc.3 for WhatsApp connectivity
+- Express.js provides the web interface
+- QR code generation happens automatically
+- Session persistence via `auth_info/` directory
+
+## 📊 Monitoring
+
+### Health Checks
+
+The bot provides several endpoints for monitoring:
+
+- `/health` - Comprehensive health status
+- `/ping` - Simple ping response
+- `/status` - Bot connection details
+- `/keep-alive-stats` - Keep-alive service statistics
+
+### Logs
+
+- Connection status updates
+- Command usage tracking
+- Error logging with context
+- Auto-view activity logs
+
+## 🚨 Troubleshooting
+
+### Common Issues
+
+1. **QR Code not showing**
+   - Clear auth_info folder
+   - Restart the bot
+   - Check browser console
+
+2. **Connection drops**
+   - Check internet connection
+   - Verify WhatsApp is linked
+   - Review auth_info permissions
+
+3. **Commands not working**
+   - Ensure you're messaging the bot number
+   - Check command prefix (default: `.`)
+   - Verify bot is online
+
+### Debug Mode
+
+Enable debug logging by setting `NODE_ENV=development`:
+
+```bash
+NODE_ENV=development npm start
+```
 
 ## 📝 License
 
@@ -187,16 +223,17 @@ Apache License 2.0 - see [LICENSE](LICENSE) file
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## 📞 Support
 
-- 🐛 [Report bugs](https://github.com/yourusername/WA-BOT/issues)
-- 💬 [Discussions](https://github.com/yourusername/WA-BOT/discussions)
+- 🐛 [Report bugs](https://github.com/GihanPasidu/WA-BOT/issues)
+- 💬 [Discussions](https://github.com/GihanPasidu/WA-BOT/discussions)
 - 📧 Contact: contact@cloudnextra.dev
 
 ---
 
-Made by [CloudNextra](https://cloudnextra.dev)
+**Made with ❤️ by [CloudNextra](https://cloudnextra.dev)**

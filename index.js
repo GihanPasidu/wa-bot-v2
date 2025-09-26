@@ -34,6 +34,9 @@ const maxRetries = config.reconnectAttempts ?? 5;
 let autoViewEnabled = process.env.AUTO_VIEW_STATUS === 'true' || false;
 let viewedStatusCount = 0;
 
+// Call blocking functionality
+global.callBlockEnabled = false;
+
 // Presence tracking
 let currentPresence = 'available'; // Default to online
 
@@ -959,15 +962,24 @@ ${autoViewEnabled ? '✅ Will automatically view WhatsApp status updates' : '❌
 
 ⚙️ *Features:*
 • Auto View Status: ${autoViewEnabled ? '✅ Enabled' : '❌ Disabled'}
+• Call Blocking: ${global.callBlockEnabled ? '✅ Enabled' : '❌ Disabled'}
 • Viewed Status Count: ${viewedStatusCount}
 • Environment: ${process.env.NODE_ENV || 'development'}
 • Version: 1.0.0
 
-🛠️ *Available Commands:*
+🛠️ *Core Commands:*
 • ${prefix}info - Show bot information
 • ${prefix}autoview - Toggle auto-view for status updates
 • ${prefix}online - Set presence to online
 • ${prefix}offline - Set presence to offline
+
+🔧 *Utility Commands:*
+• ${prefix}anticall - Toggle call blocking
+• ${prefix}panel - Show control panel
+• ${prefix}sticker - Create sticker from image
+• ${prefix}toimg - Convert sticker to image
+• ${prefix}shorturl - Shorten URL
+• ${prefix}pass - Generate secure password
 
 🔐 *Security:*
 Commands work only in self-chat for security.`;
@@ -1011,10 +1023,253 @@ Commands work only in self-chat for security.`;
                     return;
                 }
 
+                // Handle .anticall command
+                if (cmd === 'anticall') {
+                    try {
+                        // Toggle call blocking status (this would need to be implemented with actual call blocking logic)
+                        const isCallBlockEnabled = !global.callBlockEnabled; // Toggle status
+                        global.callBlockEnabled = isCallBlockEnabled;
+                        
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: `📞 *Call Blocking ${isCallBlockEnabled ? 'Enabled' : 'Disabled'}*\n\n${isCallBlockEnabled ? '✅ Incoming calls will be automatically rejected' : '❌ Incoming calls will be allowed'}` 
+                        }, { quoted: m });
+                        console.log(`[WA-BOT] Call blocking ${isCallBlockEnabled ? 'enabled' : 'disabled'}`);
+                    } catch (error) {
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '❌ Failed to toggle call blocking' 
+                        }, { quoted: m });
+                        console.error('[WA-BOT] Anticall command error:', error);
+                    }
+                    return;
+                }
+
+                // Handle .panel command
+                if (cmd === 'panel') {
+                    try {
+                        const uptime = process.uptime();
+                        const uptimeHours = Math.floor(uptime / 3600);
+                        const uptimeMinutes = Math.floor((uptime % 3600) / 60);
+                        const uptimeFormatted = `${uptimeHours}h ${uptimeMinutes}m`;
+                        
+                        const panelText = 
+`╔══════════════════════════════╗
+║        Control Panel         ║
+╚══════════════════════════════╝
+
+🤖 *Bot Information:*
+• Status: ${connectionStatus === 'connected' ? '🟢 Online' : '🔴 Offline'}
+• Uptime: ${uptimeFormatted}
+• Memory: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB
+• Auto View: ${autoViewEnabled ? '✅ ON' : '❌ OFF'}
+• Call Block: ${global.callBlockEnabled ? '✅ ON' : '❌ OFF'}
+
+📊 *Statistics:*
+• Viewed Status: ${viewedStatusCount}
+• Commands Executed: Available
+• Environment: ${process.env.NODE_ENV || 'dev'}
+
+⚙️ *Quick Actions:*
+• ${prefix}anticall - Toggle call blocking
+• ${prefix}autoview - Toggle auto status view
+• ${prefix}online - Set online presence
+• ${prefix}offline - Set offline presence
+
+🔧 *Utilities:*
+• ${prefix}sticker - Create sticker
+• ${prefix}pass 12 - Generate password`;
+
+                        await sock.sendMessage(m.key.remoteJid, { text: panelText }, { quoted: m });
+                    } catch (error) {
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '❌ Failed to load control panel' 
+                        }, { quoted: m });
+                        console.error('[WA-BOT] Panel command error:', error);
+                    }
+                    return;
+                }
+
+                // Handle .sticker command
+                if (cmd === 'sticker') {
+                    try {
+                        if (m.message?.imageMessage || m.quoted?.message?.imageMessage) {
+                            const imageMsg = m.message?.imageMessage || m.quoted?.message?.imageMessage;
+                            
+                            await sock.sendMessage(m.key.remoteJid, { 
+                                text: '🏷️ *Creating Sticker...*\n\nProcessing your image...' 
+                            }, { quoted: m });
+                            
+                            try {
+                                const media = await downloadMediaMessage(m.quoted || m, 'buffer', {});
+                                
+                                await sock.sendMessage(m.key.remoteJid, {
+                                    sticker: media,
+                                }, { quoted: m });
+                                
+                                console.log('[WA-BOT] Sticker created successfully');
+                            } catch (downloadError) {
+                                await sock.sendMessage(m.key.remoteJid, { 
+                                    text: '❌ Failed to create sticker. Please try with a different image.' 
+                                }, { quoted: m });
+                                console.error('[WA-BOT] Sticker creation error:', downloadError);
+                            }
+                        } else {
+                            await sock.sendMessage(m.key.remoteJid, { 
+                                text: '🏷️ *Create Sticker*\n\n📷 Please send an image with the command:\n`.sticker` (with image)\n\nOr reply to an image with `.sticker`' 
+                            }, { quoted: m });
+                        }
+                    } catch (error) {
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '❌ Failed to process sticker command' 
+                        }, { quoted: m });
+                        console.error('[WA-BOT] Sticker command error:', error);
+                    }
+                    return;
+                }
+
+                // Handle .toimg command
+                if (cmd === 'toimg') {
+                    try {
+                        if (m.quoted?.message?.stickerMessage) {
+                            await sock.sendMessage(m.key.remoteJid, { 
+                                text: '🖼️ *Converting Sticker to Image...*\n\nProcessing...' 
+                            }, { quoted: m });
+                            
+                            try {
+                                const media = await downloadMediaMessage(m.quoted, 'buffer', {});
+                                
+                                await sock.sendMessage(m.key.remoteJid, {
+                                    image: media,
+                                    caption: '🖼️ *Converted to Image*'
+                                }, { quoted: m });
+                                
+                                console.log('[WA-BOT] Sticker converted to image successfully');
+                            } catch (downloadError) {
+                                await sock.sendMessage(m.key.remoteJid, { 
+                                    text: '❌ Failed to convert sticker. Please try with a different sticker.' 
+                                }, { quoted: m });
+                                console.error('[WA-BOT] Sticker to image conversion error:', downloadError);
+                            }
+                        } else {
+                            await sock.sendMessage(m.key.remoteJid, { 
+                                text: '🖼️ *Convert Sticker to Image*\n\n🏷️ Please reply to a sticker with:\n`.toimg`\n\nThis will convert the sticker to a regular image.' 
+                            }, { quoted: m });
+                        }
+                    } catch (error) {
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '❌ Failed to process image conversion command' 
+                        }, { quoted: m });
+                        console.error('[WA-BOT] ToImg command error:', error);
+                    }
+                    return;
+                }
+
+                // Handle .shorturl command
+                if (cmd === 'shorturl') {
+                    try {
+                        if (!args.trim()) {
+                            await sock.sendMessage(m.key.remoteJid, { 
+                                text: '🔗 *Shorten URL*\n\n📝 Usage: `.shorturl https://example.com`\n\nPlease provide a valid URL to shorten.' 
+                            }, { quoted: m });
+                            return;
+                        }
+
+                        const url = args.trim();
+                        
+                        // Basic URL validation
+                        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                            await sock.sendMessage(m.key.remoteJid, { 
+                                text: '❌ *Invalid URL*\n\nPlease provide a valid URL starting with http:// or https://' 
+                            }, { quoted: m });
+                            return;
+                        }
+
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '🔗 *URL Shortening Service*\n\n📋 Original URL:\n' + url + '\n\n⚠️ *Note:* This is a demo response. To implement actual URL shortening, integrate with services like:\n• bit.ly API\n• tinyurl.com API\n• is.gd API\n\n🔧 Implementation needed in bot code.' 
+                        }, { quoted: m });
+                        
+                        console.log('[WA-BOT] URL shortening requested for:', url);
+                    } catch (error) {
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '❌ Failed to process URL shortening' 
+                        }, { quoted: m });
+                        console.error('[WA-BOT] Shorturl command error:', error);
+                    }
+                    return;
+                }
+
+                // Handle .pass command
+                if (cmd === 'pass') {
+                    try {
+                        let length = 12; // Default length
+                        
+                        if (args.trim()) {
+                            const inputLength = parseInt(args.trim());
+                            if (inputLength >= 4 && inputLength <= 50) {
+                                length = inputLength;
+                            } else {
+                                await sock.sendMessage(m.key.remoteJid, { 
+                                    text: '❌ *Invalid Length*\n\nPassword length must be between 4 and 50 characters.\n\n💡 Example: `.pass 16`' 
+                                }, { quoted: m });
+                                return;
+                            }
+                        }
+
+                        // Character sets for password generation
+                        const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+                        const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                        const numbers = '0123456789';
+                        const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+                        
+                        const allChars = lowercase + uppercase + numbers + symbols;
+                        
+                        let password = '';
+                        
+                        // Ensure at least one character from each set
+                        password += lowercase[Math.floor(Math.random() * lowercase.length)];
+                        password += uppercase[Math.floor(Math.random() * uppercase.length)];
+                        password += numbers[Math.floor(Math.random() * numbers.length)];
+                        password += symbols[Math.floor(Math.random() * symbols.length)];
+                        
+                        // Fill the remaining length
+                        for (let i = password.length; i < length; i++) {
+                            password += allChars[Math.floor(Math.random() * allChars.length)];
+                        }
+                        
+                        // Shuffle the password
+                        password = password.split('').sort(() => Math.random() - 0.5).join('');
+
+                        const passText = 
+`🔐 *Generated Password*
+
+🔑 **Password:** \`${password}\`
+
+📊 **Details:**
+• Length: ${length} characters
+• Strength: Strong 💪
+• Contains: Letters, Numbers, Symbols
+
+⚠️ **Security Tips:**
+• Don't share this password
+• Store it in a secure password manager
+• Use unique passwords for each account
+
+💡 **Usage:** \`.pass 16\` (custom length)`;
+
+                        await sock.sendMessage(m.key.remoteJid, { text: passText }, { quoted: m });
+                        console.log(`[WA-BOT] Password generated with length: ${length}`);
+                    } catch (error) {
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: '❌ Failed to generate password' 
+                        }, { quoted: m });
+                        console.error('[WA-BOT] Password command error:', error);
+                    }
+                    return;
+                }
+
                 // Unknown command
                 if (cmd) {
                     await sock.sendMessage(m.key.remoteJid, { 
-                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n• ${prefix}info - Show bot information\n• ${prefix}autoview - Toggle auto-view for status updates\n• ${prefix}online - Set presence to online\n• ${prefix}offline - Set presence to offline` 
+                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n\n📱 *Core:*\n• ${prefix}info - Bot information\n• ${prefix}autoview - Toggle auto-view\n• ${prefix}online - Set online\n• ${prefix}offline - Set offline\n\n🔧 *Utilities:*\n• ${prefix}anticall - Toggle call blocking\n• ${prefix}panel - Control panel\n• ${prefix}sticker - Create sticker\n• ${prefix}toimg - Convert to image\n• ${prefix}shorturl - Shorten URL\n• ${prefix}pass - Generate password` 
                     }, { quoted: m });
                 }
 

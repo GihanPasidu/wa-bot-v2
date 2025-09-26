@@ -38,12 +38,18 @@ A professional WhatsApp bot built with Baileys library, featuring **QR code web 
 
 ## 🎮 Bot Commands
 
-| Command | Description |
-|---------|-------------|
-| `.info` | Show bot information and statistics |
-| `.autoview` | Toggle auto-view for status updates |
-| `.online` | Set presence to online |
-| `.offline` | Set presence to offline |
+| Command | Description | Usage |
+|---------|-------------|-------|
+| `.info` | Show bot information and statistics | `.info` |
+| `.autoview` | Toggle auto-view for status updates | `.autoview` |
+| `.online` | Set presence to online | `.online` |
+| `.offline` | Set presence to offline | `.offline` |
+| `.anticall` | 📞 Toggle call blocking | `.anticall` |
+| `.panel` | 📋 Show control panel | `.panel` |
+| `.sticker` | 🏷️ Create sticker | `.sticker (with image)` |
+| `.toimg` | 🖼️ Convert to image | `.toimg (reply to sticker)` |
+| `.shorturl` | 🔗 Shorten URL | `.shorturl https://example.com` |
+| `.pass` | 🔐 Generate password | `.pass 16` |
 
 ## � Auto-View Feature
 

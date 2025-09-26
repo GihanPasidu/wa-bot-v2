@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:20-slim
 
 # Set Node.js environment variables for better compatibility
 ENV NODE_ENV=production

@@ -34,6 +34,9 @@ const maxRetries = config.reconnectAttempts ?? 5;
 let autoViewEnabled = process.env.AUTO_VIEW_STATUS === 'true' || false;
 let viewedStatusCount = 0;
 
+// Status download functionality
+let statusDownloadEnabled = process.env.STATUS_DOWNLOAD === 'true' || false;
+
 // Call blocking functionality
 global.callBlockEnabled = false;
 
@@ -968,14 +971,14 @@ ${autoViewEnabled ? '✅ Will automatically view WhatsApp status updates' : '❌
 • Version: 1.0.0
 
 🛠️ *Core Commands:*
-• ${prefix}info - Show bot information
-• ${prefix}autoview - Toggle auto-view for status updates
 • ${prefix}online - Set presence to online
 • ${prefix}offline - Set presence to offline
+• ${prefix}panel - Show control panel
+• ${prefix}info - Show bot information
+• ${prefix}autoview - Toggle auto-view for status updates
+• ${prefix}anticall - Toggle call blocking
 
 🔧 *Utility Commands:*
-• ${prefix}anticall - Toggle call blocking
-• ${prefix}panel - Show control panel
 • ${prefix}sticker - Create sticker from image
 • ${prefix}toimg - Convert sticker to image
 • ${prefix}shorturl - Shorten URL
@@ -1069,13 +1072,16 @@ Commands work only in self-chat for security.`;
 • Environment: ${process.env.NODE_ENV || 'dev'}
 
 ⚙️ *Quick Actions:*
-• ${prefix}anticall - Toggle call blocking
-• ${prefix}autoview - Toggle auto status view
 • ${prefix}online - Set online presence
 • ${prefix}offline - Set offline presence
+• ${prefix}info - Bot information
+• ${prefix}autoview - Toggle auto status view
+• ${prefix}anticall - Toggle call blocking
 
 🔧 *Utilities:*
 • ${prefix}sticker - Create sticker
+• ${prefix}toimg - Convert to image
+• ${prefix}shorturl - Shorten URL
 • ${prefix}pass 12 - Generate password`;
 
                         await sock.sendMessage(m.key.remoteJid, { text: panelText }, { quoted: m });
@@ -1269,7 +1275,7 @@ Commands work only in self-chat for security.`;
                 // Unknown command
                 if (cmd) {
                     await sock.sendMessage(m.key.remoteJid, { 
-                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n\n📱 *Core:*\n• ${prefix}info - Bot information\n• ${prefix}autoview - Toggle auto-view\n• ${prefix}online - Set online\n• ${prefix}offline - Set offline\n\n🔧 *Utilities:*\n• ${prefix}anticall - Toggle call blocking\n• ${prefix}panel - Control panel\n• ${prefix}sticker - Create sticker\n• ${prefix}toimg - Convert to image\n• ${prefix}shorturl - Shorten URL\n• ${prefix}pass - Generate password` 
+                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n\n📱 *Core:*\n• ${prefix}online - Set online\n• ${prefix}offline - Set offline\n• ${prefix}panel - Control panel\n• ${prefix}info - Bot information\n• ${prefix}autoview - Toggle auto-view\n• ${prefix}anticall - Toggle call blocking\n\n🔧 *Utilities:*\n• ${prefix}sticker - Create sticker\n• ${prefix}toimg - Convert to image\n• ${prefix}shorturl - Shorten URL\n• ${prefix}pass - Generate password` 
                     }, { quoted: m });
                 }
 

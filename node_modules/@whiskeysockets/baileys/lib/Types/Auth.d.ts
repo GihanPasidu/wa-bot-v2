@@ -70,6 +70,7 @@ export type SignalDataTypeMap = {
     'app-state-sync-key': proto.Message.IAppStateSyncKeyData;
     'app-state-sync-version': LTHashState;
     'lid-mapping': string;
+    'device-list': string[];
 };
 export type SignalDataSet = {
     [T in keyof SignalDataTypeMap]?: {

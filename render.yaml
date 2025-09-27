@@ -1,25 +1,91 @@
+# CloudNextra WhatsApp Bot V2.0 - Render Deployment Configuration
 services:
   - type: web
-    name: cloudnextra-wa-bot
+    name: cloudnextra-wa-bot-v2
     env: docker
     dockerfilePath: ./Dockerfile
     plan: free
     region: oregon
     envVars:
+      # Core V2.0 Environment Variables
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: "10000"
+      
+      # Bot Configuration
+      - key: BOT_VERSION
+        value: "2.0.0"
+      - key: BOT_NAME
+        value: "CloudNextra Bot V2.0"
+      
+      # Session Management
       - key: SESSION_ID
         sync: false
-      - key: AUTO_READ_STATUS
+      
+      # Feature Toggles (V2.0)
+      - key: AUTO_VIEW_STATUS
         value: "false"
       - key: STATUS_DOWNLOAD
         value: "true"
-      - key: PORT
-        value: "10000"
+      - key: AUTO_REPLY_ENABLED
+        value: "false"
+      - key: CALL_BLOCKING_ENABLED
+        value: "false"
+      
+      # Performance & Security (V2.0)
+      - key: ENABLE_METRICS
+        value: "true"
+      - key: ENABLE_RATE_LIMITING
+        value: "true"
+      - key: MAX_MEMORY_USAGE
+        value: "512"
+      - key: LOG_LEVEL
+        value: "info"
+      
+      # Keep-Alive Configuration
       - key: RENDER_EXTERNAL_URL
-        value: https://cloudnextra-wa-bot.onrender.com
+        value: https://wa-bot-g7qp.onrender.com
+      - key: KEEP_ALIVE_INTERVAL
+        value: "10"
+      
+      # Professional UI (V2.0)
+      - key: PROFESSIONAL_UI
+        value: "true"
+      - key: UNICODE_BORDERS
+        value: "true"
+      
+      # Security Settings
+      - key: SELF_CHAT_ONLY
+        value: "true"
+      - key: PRIVATE_CHATS_ONLY
+        value: "true"
+      
+    # V2.0 Enhanced Health Check
     healthCheckPath: /health
+    
+    # Persistent Storage for V2.0
     disk:
-      name: wa-bot-storage
+      name: cloudnextra-wa-bot-v2-storage
       mountPath: /app/auth_info
       sizeGB: 1
+    
+    # V2.0 Build Configuration
+    buildCommand: npm ci --only=production
+    
+    # Auto-Deploy Settings
+    autoDeploy: true
+    branch: main
+    
+    # Resource Limits
+    maxCpu: 0.5
+    maxMemory: 1024MB
+    
+    # Custom Headers for V2.0
+    headers:
+      - path: /*
+        name: X-Bot-Version
+        value: "2.0.0"
+      - path: /*
+        name: X-Powered-By
+        value: "CloudNextra"

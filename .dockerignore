@@ -1,13 +1,141 @@
+# CloudNextra WhatsApp Bot V2.0 - Docker Ignore Configuration
+# Optimized for V2.0 build process
+
+# Node.js
 node_modules
-npm-debug.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm
+.pnpm-debug.log*
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Development dependencies
+.cache
+.parcel-cache
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+
+# Docker files (don't include in image)
 Dockerfile
+Dockerfile.*
 .dockerignore
+docker-compose.yml
+docker-compose.*.yml
+
+# Git
 .git
 .gitignore
+.gitattributes
+
+# Documentation
 README.md
-.env
-.nyc_output
-coverage
-.cache
-auth_info
-*.log
+CHANGELOG.md
+LICENSE
+docs/
+*.md
+
+# IDE and editor files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Testing
+test/
+tests/
+*.test.js
+*.spec.js
+coverage/
+
+# Build tools
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Authentication data (handled separately)
+auth_info/
+session.json
+creds.json
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Backup files
+*.backup
+*.bak
+
+# V2.0 specific exclusions
+settings.json
+.settings
+config.local.js
+local.env
+
+# Development scripts
+scripts/dev/
+dev/
+.dev/
+
+# Package manager files
+package-lock.json.backup
+yarn.lock.backup
+
+# Render specific files
+render.yaml.backup

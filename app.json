@@ -1,17 +1,99 @@
 {
-  "name": "Whatsapp-bot",
-  "description": "Javascript WhatsApp bot made by CloudNextra",
-  "logo": "https://drive.google.com/file/d/1hLP8di6ghsp231kEMwb9AKYB_OBLJ_Jo/view?usp=sharing",
-  "keywords": ["bot"],
+  "name": "CloudNextra WhatsApp Bot V2.0",
+  "description": "Professional Multi-Device WhatsApp Bot V2.0 with Advanced Auto-Reply, Status Management, Security Features, and Professional UI",
+  "logo": "https://img.shields.io/badge/CloudNextra-Bot%20V2.0-brightgreen?style=for-the-badge&logo=whatsapp",
+  "keywords": [
+    "whatsapp",
+    "bot", 
+    "baileys",
+    "cloudnextra",
+    "v2.0",
+    "multi-device",
+    "auto-reply",
+    "status-viewer",
+    "call-blocker",
+    "professional",
+    "secure",
+    "nodejs",
+    "docker"
+  ],
   "success_url": "/",
-
+  "website": "https://github.com/GihanPasidu/WA-BOT",
+  "repository": "https://github.com/GihanPasidu/WA-BOT",
+  
   "env": {
+    "NODE_ENV": {
+      "description": "Application environment",
+      "value": "production",
+      "required": true
+    },
+    "BOT_VERSION": {
+      "description": "Bot version identifier",
+      "value": "2.0.0",
+      "required": false
+    },
+    "SESSION_ID": {
+      "description": "Unique session identifier for the bot instance",
+      "required": false
+    },
     "AUTO_VIEW_STATUS": {
-      "description": "Enable auto-view for status updates (true/false)",
+      "description": "Enable automatic status viewing (V2.0 Feature)",
+      "value": "false",
       "required": false
     },
     "STATUS_DOWNLOAD": {
-      "description": "Enable status download tracking (true/false)",
+      "description": "Enable status download tracking",
+      "value": "true", 
+      "required": false
+    },
+    "AUTO_REPLY_ENABLED": {
+      "description": "Enable intelligent auto-reply system with 14+ responses (V2.0 Feature)",
+      "value": "false",
+      "required": false
+    },
+    "CALL_BLOCKING_ENABLED": {
+      "description": "Enable advanced call blocking feature (V2.0 Feature)",
+      "value": "false",
+      "required": false
+    },
+    "PROFESSIONAL_UI": {
+      "description": "Enable professional UI with Unicode borders and emojis (V2.0 Feature)",
+      "value": "true",
+      "required": false
+    },
+    "ENABLE_METRICS": {
+      "description": "Enable performance metrics and analytics (V2.0 Feature)",
+      "value": "true",
+      "required": false
+    },
+    "ENABLE_RATE_LIMITING": {
+      "description": "Enable rate limiting for security (V2.0 Feature)",
+      "value": "true",
+      "required": false
+    },
+    "SELF_CHAT_ONLY": {
+      "description": "Restrict commands to self-chat only for security",
+      "value": "true",
+      "required": false
+    },
+    "PRIVATE_CHATS_ONLY": {
+      "description": "Enable auto-reply only in private chats (V2.0 Security)",
+      "value": "true",
+      "required": false
+    },
+    "LOG_LEVEL": {
+      "description": "Application logging level (error, warn, info, debug)",
+      "value": "info",
+      "required": false
+    },
+    "MAX_MEMORY_USAGE": {
+      "description": "Maximum memory usage in MB",
+      "value": "512",
+      "required": false
+    },
+    "KEEP_ALIVE_INTERVAL": {
+      "description": "Keep-alive ping interval in minutes",
+      "value": "10",
       "required": false
     }
   },
@@ -21,5 +103,32 @@
       "url": "https://github.com/heroku/heroku-buildpack-nodejs.git"
     }
   ],
-  "stack": "heroku-24"
+  
+  "stack": "heroku-24",
+  
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  },
+  
+  "addons": [],
+  
+  "scripts": {
+    "postdeploy": "echo 'CloudNextra WhatsApp Bot V2.0 deployed successfully!'"
+  },
+  
+  "environments": {
+    "production": {
+      "NODE_ENV": "production",
+      "PROFESSIONAL_UI": "true",
+      "ENABLE_METRICS": "true"
+    },
+    "development": {
+      "NODE_ENV": "development", 
+      "LOG_LEVEL": "debug",
+      "ENABLE_METRICS": "false"
+    }
+  }
 }

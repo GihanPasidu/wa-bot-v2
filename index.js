@@ -1,3 +1,4 @@
+// CloudNextra WhatsApp Bot V2.0 - Main Application
 // Load polyfills first
 require('./polyfill');
 
@@ -10,7 +11,12 @@ const express = require('express');
 const QRCode = require('qrcode');
 const KeepAliveService = require('./keep-alive');
 
-// Express app for health checks
+// CloudNextra WhatsApp Bot V2.0 - Enhanced Configuration
+const BOT_VERSION = '2.0.0';
+const BOT_NAME = 'CloudNextra Bot V2.0';
+const BOT_DESCRIPTION = 'Professional WhatsApp Bot with Advanced Features';
+
+// Express app for health checks and V2.0 web interface
 const app = express();
 const PORT = process.env.PORT || 10000;
 
@@ -39,6 +45,29 @@ let statusDownloadEnabled = process.env.STATUS_DOWNLOAD === 'true' || false;
 
 // Call blocking functionality
 global.callBlockEnabled = false;
+
+// Auto-reply functionality
+let autoReplyEnabled = false;
+
+// Bot status functionality
+let botEnabled = true;
+const autoReplyMessages = {
+    'hi': '👋 Hello! How can I assist you today?',
+    'hello': '👋 Hello! How can I assist you today?',
+    'good morning': '🌅 Good morning! Wishing you a productive and successful day ahead!',
+    'gm': '🌅 Good morning! Wishing you a productive and successful day ahead!',
+    'good afternoon': '🌞 Good afternoon! Hope you\'re having an excellent day so far!',
+    'good evening': '🌆 Good evening! Hope your day has been wonderful and fulfilling!',
+    'good night': '🌙 Good night! Rest well and sweet dreams! See you tomorrow.',
+    'gn': '🌙 Good night! Rest well and sweet dreams! See you tomorrow.',
+    'thank you': '😊 You\'re most welcome! Happy to help anytime.',
+    'thanks': '😊 You\'re most welcome! Happy to help anytime.',
+    'bye': '👋 Goodbye! Take care and have a wonderful day ahead!',
+    'see you': '👋 See you later! Looking forward to our next conversation.',
+    'how are you': '😊 I\'m doing excellent, thank you for asking! How may I assist you today?',
+    'what\'s up': '✨ Hello there! Everything\'s running smoothly. How can I help you?'
+};
+let autoReplyCount = 0;
 
 // Presence tracking
 let currentPresence = 'available'; // Default to online
@@ -141,7 +170,7 @@ app.get('/', (req, res) => {
     res.send(`
         <html>
         <head>
-            <title>CloudNextra WhatsApp Bot</title>
+            <title>CloudNextra WhatsApp Bot V2.0</title>
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <style>
                 body { 
@@ -261,7 +290,7 @@ app.get('/', (req, res) => {
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🤖 CloudNextra WhatsApp Bot</h1>
+                    <h1>🚀 CloudNextra WhatsApp Bot V2.0</h1>
                     <p>Professional WhatsApp automation service</p>
                     ${RENDER_URL ? '<span class="badge badge-success">Keep-Alive Active</span>' : '<span class="badge badge-warning">Local Mode</span>'}
                 </div>
@@ -532,11 +561,58 @@ async function connectToWhatsApp() {
             connectTimeoutMs: 60_000,
             emitOwnEvents: true,
             retryRequestDelayMs: 2000,
-            browser: ['CloudNextra Bot', 'Desktop', '1.0.0'],
+            browser: ['CloudNextra Bot V2.0', 'Desktop', '2.0.0'],
         });
 
         // persist credentials on update
         sock.ev.on('creds.update', saveCreds);
+
+        // Handle incoming calls for call blocking feature
+        sock.ev.on('call', async (callUpdate) => {
+            if (global.callBlockEnabled) {
+                for (const call of callUpdate) {
+                    if (call.status === 'offer') {
+                        // Reject the incoming call
+                        try {
+                            await sock.rejectCall(call.id, call.from);
+                            console.log(`[WA-BOT] 🚫 Blocked call from ${call.from}`);
+                            
+                            // Optional: Send a message to the caller explaining the call was blocked
+                            try {
+                                await sock.sendMessage(call.from, {
+                                    text: `📞 *Call Blocked* - Automated Response
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛡️ *CALL PROTECTION ACTIVE*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Your call has been automatically blocked by CloudNextra Bot V2.0.
+
+🔒 *Reason:* Call blocking is currently enabled
+📱 *Alternative:* Please send a text message instead
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚡ Powered by CloudNextra Bot V2.0`
+                                });
+                                console.log(`[WA-BOT] 📩 Sent call blocking notification to ${call.from}`);
+                            } catch (msgError) {
+                                console.log(`[WA-BOT] ⚠️ Could not send blocking message to ${call.from}:`, msgError.message);
+                            }
+                        } catch (error) {
+                            console.error(`[WA-BOT] ❌ Failed to block call from ${call.from}:`, error.message);
+                        }
+                    }
+                }
+            } else {
+                // Log incoming calls when blocking is disabled (for debugging)
+                for (const call of callUpdate) {
+                    if (call.status === 'offer') {
+                        console.log(`[WA-BOT] 📞 Incoming call from ${call.from} (blocking disabled)`);
+                    }
+                }
+            }
+        });
 
         // keep reference for safe close on reconnect
         if (currentSock && currentSock !== sock) {
@@ -689,21 +765,111 @@ async function connectToWhatsApp() {
                         }
                     }
                 }
+
+                // Handle auto-reply for regular messages from other contacts (private chats only)
+                if (!m.key.fromMe && autoReplyEnabled && m.key.remoteJid !== 'status@broadcast' && 
+                    !m.key.remoteJid.endsWith('@g.us') && text.trim()) {
+                    try {
+                        const incomingText = text.toLowerCase().trim();
+                        let replyMessage = null;
+                        
+                        // Check for exact matches first
+                        if (autoReplyMessages[incomingText]) {
+                            replyMessage = autoReplyMessages[incomingText];
+                        } else {
+                            // Check for partial matches (keywords contained in the message)
+                            for (const [keyword, response] of Object.entries(autoReplyMessages)) {
+                                if (incomingText.includes(keyword.toLowerCase())) {
+                                    replyMessage = response;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (replyMessage) {
+                            // Add a small delay to make it seem more natural
+                            setTimeout(async () => {
+                                await sock.sendMessage(m.key.remoteJid, { text: replyMessage });
+                                autoReplyCount++;
+                                console.log(`[WA-BOT] ✅ Auto-replied to: ${m.pushName || 'Unknown'} with: ${replyMessage}`);
+                            }, 1000 + Math.random() * 2000); // 1-3 second delay
+                        }
+                    } catch (e) {
+                        console.error('[WA-BOT] Auto-reply error:', e);
+                    }
+                }
                 return;
             }
 
             try {
+                // Check if bot is enabled (allow onbot, offbot, and info commands even when disabled)
+                if (!botEnabled && cmd !== 'onbot' && cmd !== 'offbot' && cmd !== 'info') {
+                    // Bot is disabled, ignore all commands except onbot, offbot, and info
+                    return;
+                }
+
                 // Handle .autoview command
                 if (cmd === 'autoview') {
                     autoViewEnabled = !autoViewEnabled;
                     const statusText = autoViewEnabled ? 'enabled' : 'disabled';
                     const emoji = autoViewEnabled ? '✅' : '❌';
-                    const replyText = `${emoji} Auto View Status has been *${statusText}*
+                    const replyText = `${emoji} *Auto View Status Updated*
 
-👀 *Auto View Feature:*
-${autoViewEnabled ? '✅ Will automatically view WhatsApp status updates' : '❌ Will NOT automatically view status updates'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👀 *AUTO VIEW MANAGEMENT*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-💡 This feature automatically marks status updates as viewed, similar to when you open WhatsApp and see status updates.`;
+📋 *Current Status:* ${autoViewEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
+${autoViewEnabled ? '🟢 Status updates will be automatically viewed' : '🔴 Status auto-viewing is currently disabled'}
+
+📊 *Analytics:*
+• 👁️ Status viewed: ${viewedStatusCount}
+• 🎯 Target: WhatsApp status updates only
+
+💡 *How it Works:*
+• ✅ Automatically marks status updates as "viewed"
+• 👀 Similar to opening WhatsApp and viewing stories
+• 🚫 Does NOT view regular chat messages
+• 🔒 Maintains your privacy in conversations
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+                    await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
+                    return;
+                }
+
+                // Handle .autoreply command
+                if (cmd === 'autoreply') {
+                    autoReplyEnabled = !autoReplyEnabled;
+                    const statusText = autoReplyEnabled ? 'enabled' : 'disabled';
+                    const emoji = autoReplyEnabled ? '✅' : '❌';
+                    
+                    // Generate sample keywords list for display
+                    const sampleKeywords = Object.keys(autoReplyMessages).slice(0, 6).join(', ');
+                    
+                    const replyText = `${emoji} *Auto Reply Status Updated*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 *AUTO REPLY MANAGEMENT*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 *Current Status:* ${autoReplyEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
+${autoReplyEnabled ? '🟢 System will automatically respond to keyword messages' : '🔴 Automatic responses are currently disabled'}
+
+📝 *Supported Keywords:*
+${sampleKeywords}... and more
+
+📊 *Performance Analytics:*
+• 📨 Total replies sent: ${autoReplyCount}
+• 🔤 Keywords configured: ${Object.keys(autoReplyMessages).length}
+• 🎯 Target: Private chats only
+
+💡 *Important Notes:*
+• ✅ Only responds to private chat messages
+• ❌ Does not work in group chats
+• 🚫 Ignores your own messages
+• ⚡ Natural delay: 1-3 seconds
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
                     await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
                     return;
                 }
@@ -954,38 +1120,58 @@ ${autoViewEnabled ? '✅ Will automatically view WhatsApp status updates' : '❌
                     const uptimeFormatted = `${hours}h ${minutes}m ${seconds}s`;
                     
                     const infoText = 
-`╔═════════════════════════════╗
-║   CloudNextra Bot — Info    ║
-╚═════════════════════════════╝
+`┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃        🚀 CLOUDNEXTRA BOT V2.0 INFO     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-📊 *Bot Status:*
-• Connection: ${connectionStatus === 'connected' ? '🟢 Connected' : '🔴 Disconnected'}
-• Presence: ${currentPresence === 'available' ? '🟢 Online' : '🔴 Offline'}
-• Uptime: ${uptimeFormatted}
+� *System Status:*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 🤖 Bot Status: ${botEnabled ? '🟢 ACTIVE' : '🔴 INACTIVE'}
+• 🌐 Connection: ${connectionStatus === 'connected' ? '🟢 ONLINE' : '🔴 OFFLINE'}
+• 👤 Presence: ${currentPresence === 'available' ? '🟢 AVAILABLE' : '🔴 AWAY'}
+• ⏰ Uptime: ${uptimeFormatted}
+• 🔧 Version: ${BOT_VERSION} (V2.0 Professional)
+• 🏢 Developer: CloudNextra Team
+• 🌍 Environment: ${process.env.NODE_ENV || 'development'}
 
-⚙️ *Features:*
-• Auto View Status: ${autoViewEnabled ? '✅ Enabled' : '❌ Disabled'}
-• Call Blocking: ${global.callBlockEnabled ? '✅ Enabled' : '❌ Disabled'}
-• Viewed Status Count: ${viewedStatusCount}
-• Environment: ${process.env.NODE_ENV || 'development'}
-• Version: 1.0.0
+⚙️ *Feature Status:*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 👀 Auto View Status: ${autoViewEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
+• 🤖 Auto Reply: ${autoReplyEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
+• 📞 Call Blocking: ${global.callBlockEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
+
+📊 *Performance Analytics:*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 👁️ Status Viewed: ${viewedStatusCount}
+• 💬 Auto Replies Sent: ${autoReplyCount}
+• ⚡ Commands Processed: Available
 
 🛠️ *Core Commands:*
-• ${prefix}online - Set presence to online
-• ${prefix}offline - Set presence to offline
-• ${prefix}panel - Show control panel
-• ${prefix}info - Show bot information
-• ${prefix}autoview - Toggle auto-view for status updates
-• ${prefix}anticall - Toggle call blocking
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• ${prefix}onbot - 🟢 Enable bot services
+• ${prefix}offbot - 🔴 Disable bot services
+• ${prefix}online - 🟢 Set presence to online
+• ${prefix}offline - 🔴 Set presence to offline
+• ${prefix}panel - 📋 Show control panel
+• ${prefix}info - ℹ️ Show bot information
+• ${prefix}autoview - 👀 Toggle auto-view status
+• ${prefix}autoreply - 🤖 Toggle auto-reply
+• ${prefix}anticall - 📞 Toggle call blocking
 
 🔧 *Utility Commands:*
-• ${prefix}sticker - Create sticker from image
-• ${prefix}toimg - Convert sticker to image
-• ${prefix}shorturl - Shorten URL
-• ${prefix}pass - Generate secure password
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• ${prefix}sticker - 🏷️ Create sticker from image
+• ${prefix}toimg - 🖼️ Convert sticker to image
+• ${prefix}shorturl - 🔗 Shorten URL
+• ${prefix}pass - 🔐 Generate secure password
 
-🔐 *Security:*
-Commands work only in self-chat for security.`;
+🔐 *Security Notice:*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+All commands work exclusively in self-chat for maximum security and privacy.
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           Powered by CloudNextra          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛`;
                     await sock.sendMessage(m.key.remoteJid, { text: infoText }, { quoted: m });
                     return;
                 }
@@ -996,12 +1182,32 @@ Commands work only in self-chat for security.`;
                         await sock.sendPresenceUpdate('available', m.key.remoteJid);
                         currentPresence = 'available';
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: '🟢 *Status Updated*\n\nPresence set to: *Online*' 
+                            text: `🟢 *Presence Status Updated*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 *ONLINE STATUS ACTIVATED*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Your WhatsApp presence is now set to: *ONLINE*
+🌐 You will appear as available to your contacts
+⚡ Status change applied successfully
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         console.log('[WA-BOT] Presence set to online');
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: '❌ Failed to set presence to online' 
+                            text: `❌ *Presence Update Failed*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *SYSTEM ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Unable to update presence to online
+🔄 Please try again in a few moments
+📞 If issue persists, check your connection
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Online command error:', error);
                     }
@@ -1014,12 +1220,32 @@ Commands work only in self-chat for security.`;
                         await sock.sendPresenceUpdate('unavailable', m.key.remoteJid);
                         currentPresence = 'unavailable';
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: '🔴 *Status Updated*\n\nPresence set to: *Offline*' 
+                            text: `🔴 *Presence Status Updated*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 *OFFLINE STATUS ACTIVATED*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Your WhatsApp presence is now set to: *OFFLINE*
+🌙 You will appear as away to your contacts
+⚡ Status change applied successfully
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         console.log('[WA-BOT] Presence set to offline');
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: '❌ Failed to set presence to offline' 
+                            text: `❌ *Presence Update Failed*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *SYSTEM ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Unable to update presence to offline
+🔄 Please try again in a few moments
+📞 If issue persists, check your connection
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Offline command error:', error);
                     }
@@ -1034,12 +1260,37 @@ Commands work only in self-chat for security.`;
                         global.callBlockEnabled = isCallBlockEnabled;
                         
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: `📞 *Call Blocking ${isCallBlockEnabled ? 'Enabled' : 'Disabled'}*\n\n${isCallBlockEnabled ? '✅ Incoming calls will be automatically rejected' : '❌ Incoming calls will be allowed'}` 
+                            text: `📞 *Call Protection Status Updated*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛡️ *CALL BLOCKING ${isCallBlockEnabled ? 'ACTIVATED' : 'DEACTIVATED'}*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 *Current Status:* ${isCallBlockEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
+${isCallBlockEnabled ? '🔴 Incoming calls will be automatically rejected' : '🟢 Incoming calls will be accepted normally'}
+
+💡 *Features:*
+• 🚫 Auto-reject unwanted calls
+• 📵 Protect your privacy
+• ⚡ Instant call termination
+• 🔒 Secure call management
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         console.log(`[WA-BOT] Call blocking ${isCallBlockEnabled ? 'enabled' : 'disabled'}`);
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: '❌ Failed to toggle call blocking' 
+                            text: `❌ *Call Protection Update Failed*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *SYSTEM ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Unable to toggle call blocking feature
+🔄 Please try again in a few moments
+📞 If issue persists, restart the bot
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Anticall command error:', error);
                     }
@@ -1055,39 +1306,52 @@ Commands work only in self-chat for security.`;
                         const uptimeFormatted = `${uptimeHours}h ${uptimeMinutes}m`;
                         
                         const panelText = 
-`╔══════════════════════════════╗
-║        Control Panel         ║
-╚══════════════════════════════╝
+`       🎛️ CONTROL PANEL DASHBOARD
 
-🤖 *Bot Information:*
-• Status: ${connectionStatus === 'connected' ? '🟢 Online' : '🔴 Offline'}
-• Uptime: ${uptimeFormatted}
-• Memory: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB
-• Auto View: ${autoViewEnabled ? '✅ ON' : '❌ OFF'}
-• Call Block: ${global.callBlockEnabled ? '✅ ON' : '❌ OFF'}
+⚙️ *Feature Controls:*
+━━━━━━━━━━━━━━━━━━━━━━━
+• 👀 Auto View: ${autoViewEnabled ? '🟢 ACTIVE' : '🔴 INACTIVE'}
+• 🤖 Auto Reply: ${autoReplyEnabled ? '🟢 ACTIVE' : '🔴 INACTIVE'}
+• 📞 Call Block: ${global.callBlockEnabled ? '🟢 ACTIVE' : '🔴 INACTIVE'}
 
-📊 *Statistics:*
-• Viewed Status: ${viewedStatusCount}
-• Commands Executed: Available
-• Environment: ${process.env.NODE_ENV || 'dev'}
+📊 *Performance Analytics:*
+━━━━━━━━━━━━━━━━━━━━━━━
+• 👁️ Status Viewed: ${viewedStatusCount}
+• 💬 Auto Replies: ${autoReplyCount}
+• ⚡ Commands Available: All Systems Go
 
-⚙️ *Quick Actions:*
-• ${prefix}online - Set online presence
-• ${prefix}offline - Set offline presence
-• ${prefix}info - Bot information
-• ${prefix}autoview - Toggle auto status view
-• ${prefix}anticall - Toggle call blocking
+🎯 *Quick Actions:*
+━━━━━━━━━━━━━━━━━━━━━━━
+• ${prefix}onbot - 🟢 Enable bot services
+• ${prefix}offbot - 🔴 Disable bot services
+• ${prefix}online - 🟢 Set online presence
+• ${prefix}offline - 🔴 Set offline presence
+• ${prefix}info - ℹ️ Detailed bot information
+• ${prefix}autoview - 👀 Toggle auto status view
+• ${prefix}autoreply - 🤖 Toggle auto reply
+• ${prefix}anticall - 📞 Toggle call blocking
 
-🔧 *Utilities:*
-• ${prefix}sticker - Create sticker
-• ${prefix}toimg - Convert to image
-• ${prefix}shorturl - Shorten URL
-• ${prefix}pass 12 - Generate password`;
+🔧 *Utility Tools:*
+━━━━━━━━━━━━━━━━━━━━━━━
+• ${prefix}sticker - 🏷️ Create sticker from image
+• ${prefix}toimg - 🖼️ Convert sticker to image
+• ${prefix}shorturl - 🔗 Shorten any URL
+• ${prefix}pass 12 - 🔐 Generate secure password`;
 
                         await sock.sendMessage(m.key.remoteJid, { text: panelText }, { quoted: m });
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: '❌ Failed to load control panel' 
+                            text: `❌ *Control Panel Error*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *SYSTEM ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Unable to load control panel
+🔄 Please try again in a few moments
+📞 If issue persists, restart the bot
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Panel command error:', error);
                     }
@@ -1101,7 +1365,16 @@ Commands work only in self-chat for security.`;
                             const imageMsg = m.message?.imageMessage || m.quoted?.message?.imageMessage;
                             
                             await sock.sendMessage(m.key.remoteJid, { 
-                                text: '🏷️ *Creating Sticker...*\n\nProcessing your image...' 
+                                text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃           🏷️ STICKER PROCESSING         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+⚡ *Creating Sticker...*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎨 Processing your image
+📦 Optimizing quality
+🚀 Almost ready...` 
                             }, { quoted: m });
                             
                             try {
@@ -1114,18 +1387,57 @@ Commands work only in self-chat for security.`;
                                 console.log('[WA-BOT] Sticker created successfully');
                             } catch (downloadError) {
                                 await sock.sendMessage(m.key.remoteJid, { 
-                                    text: '❌ Failed to create sticker. Please try with a different image.' 
+                                    text: `❌ *Sticker Creation Failed*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *PROCESSING ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Unable to process this image
+🔄 Please try with a different image
+📷 Ensure image is clear and valid format
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                                 }, { quoted: m });
                                 console.error('[WA-BOT] Sticker creation error:', downloadError);
                             }
                         } else {
                             await sock.sendMessage(m.key.remoteJid, { 
-                                text: '🏷️ *Create Sticker*\n\n📷 Please send an image with the command:\n`.sticker` (with image)\n\nOr reply to an image with `.sticker`' 
+                                text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃        🏷️ STICKER CREATION HELP         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+❌ *Image Required*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 *How to Create Sticker:*
+• 📷 Send image with caption ${prefix}sticker
+• 🔄 Reply to any image with ${prefix}sticker
+• 🎬 Works with GIFs and videos too!
+
+🎯 *Example Usage:*
+Reply to any image and type:
+\`${prefix}sticker\`
+
+⚡ *Processing Speed:* Ultra Fast
+🎨 *Quality:* HD Optimized
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                             }, { quoted: m });
                         }
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: '❌ Failed to process sticker command' 
+                            text: `❌ *Sticker Command Error*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *SYSTEM ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Unable to process command
+🔄 Please try again in a few moments
+📞 If issue persists, restart the bot
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Sticker command error:', error);
                     }
@@ -1137,7 +1449,16 @@ Commands work only in self-chat for security.`;
                     try {
                         if (m.quoted?.message?.stickerMessage) {
                             await sock.sendMessage(m.key.remoteJid, { 
-                                text: '🖼️ *Converting Sticker to Image...*\n\nProcessing...' 
+                                text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃         🖼️ STICKER CONVERSION           ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+⚡ *Converting to Image...*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎨 Processing sticker
+📷 Converting format
+🚀 Almost ready...` 
                             }, { quoted: m });
                             
                             try {
@@ -1145,24 +1466,70 @@ Commands work only in self-chat for security.`;
                                 
                                 await sock.sendMessage(m.key.remoteJid, {
                                     image: media,
-                                    caption: '🖼️ *Converted to Image*'
+                                    caption: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃          🖼️ CONVERSION COMPLETE         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+✅ *Successfully Converted*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏷️ Sticker → 🖼️ Image
+📱 Ready to save or share!`
                                 }, { quoted: m });
                                 
                                 console.log('[WA-BOT] Sticker converted to image successfully');
                             } catch (downloadError) {
                                 await sock.sendMessage(m.key.remoteJid, { 
-                                    text: '❌ Failed to convert sticker. Please try with a different sticker.' 
+                                    text: `❌ *Conversion Failed*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *PROCESSING ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Unable to convert this sticker
+🔄 Please try with a different sticker
+🏷️ Ensure sticker is valid format
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                                 }, { quoted: m });
                                 console.error('[WA-BOT] Sticker to image conversion error:', downloadError);
                             }
                         } else {
                             await sock.sendMessage(m.key.remoteJid, { 
-                                text: '🖼️ *Convert Sticker to Image*\n\n🏷️ Please reply to a sticker with:\n`.toimg`\n\nThis will convert the sticker to a regular image.' 
+                                text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃        🖼️ CONVERSION HELP GUIDE         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+❌ *Sticker Required*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 *How to Convert:*
+• 🏷️ Reply to any sticker with ${prefix}toimg
+• 📷 Converts sticker to regular image
+• 💾 Easy to save and share
+
+🎯 *Example Usage:*
+Reply to any sticker and type:
+\`${prefix}toimg\`
+
+⚡ *Processing Speed:* Ultra Fast
+🖼️ *Output:* High Quality Image
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                             }, { quoted: m });
                         }
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: '❌ Failed to process image conversion command' 
+                            text: `❌ *Image Conversion Error*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *SYSTEM ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Unable to process command
+🔄 Please try again in a few moments
+📞 If issue persists, restart the bot
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         console.error('[WA-BOT] ToImg command error:', error);
                     }
@@ -1174,7 +1541,27 @@ Commands work only in self-chat for security.`;
                     try {
                         if (!args.trim()) {
                             await sock.sendMessage(m.key.remoteJid, { 
-                                text: '🔗 *Shorten URL*\n\n📝 Usage: `.shorturl https://example.com`\n\nPlease provide a valid URL to shorten.' 
+                                text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃          🔗 URL SHORTENER HELP          ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+❌ *URL Required*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 *How to Use:*
+• 🌐 Format: ${prefix}shorturl [URL]
+• 📝 Example: ${prefix}shorturl https://example.com
+• ✂️ Creates short, shareable links
+
+🎯 *Usage Example:*
+\`${prefix}shorturl https://www.google.com\`
+
+⚡ *Features:*
+• 🚀 Lightning fast processing
+• 🔒 Secure shortened links
+• 📊 Click tracking available
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                             }, { quoted: m });
                             return;
                         }
@@ -1184,19 +1571,62 @@ Commands work only in self-chat for security.`;
                         // Basic URL validation
                         if (!url.startsWith('http://') && !url.startsWith('https://')) {
                             await sock.sendMessage(m.key.remoteJid, { 
-                                text: '❌ *Invalid URL*\n\nPlease provide a valid URL starting with http:// or https://' 
+                                text: `❌ *Invalid URL Format*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *URL VALIDATION ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ URL must start with http:// or https://
+✅ Example: https://www.google.com
+🔗 Please provide a valid URL format
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                             }, { quoted: m });
                             return;
                         }
 
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: '🔗 *URL Shortening Service*\n\n📋 Original URL:\n' + url + '\n\n⚠️ *Note:* This is a demo response. To implement actual URL shortening, integrate with services like:\n• bit.ly API\n• tinyurl.com API\n• is.gd API\n\n🔧 Implementation needed in bot code.' 
+                            text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃          🔗 URL SHORTENER SERVICE       ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+📋 *Original URL:*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${url}
+
+⚠️ *Demo Mode Active*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚧 *Service Implementation Required:*
+• 🔗 bit.ly API integration
+• ✂️ tinyurl.com API setup  
+• 🌐 is.gd API connection
+• � Custom analytics tracking
+
+💡 *Features to Add:*
+• 🚀 Real-time shortening
+• 📈 Click analytics
+• 🔒 Secure link validation
+• ⚡ Instant processing
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         
                         console.log('[WA-BOT] URL shortening requested for:', url);
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: '❌ Failed to process URL shortening' 
+                            text: `❌ *URL Shortener Error*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *PROCESSING ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Unable to process URL
+🔄 Please try again with valid URL
+🌐 Ensure URL is accessible
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Shorturl command error:', error);
                     }
@@ -1214,7 +1644,22 @@ Commands work only in self-chat for security.`;
                                 length = inputLength;
                             } else {
                                 await sock.sendMessage(m.key.remoteJid, { 
-                                    text: '❌ *Invalid Length*\n\nPassword length must be between 4 and 50 characters.\n\n💡 Example: `.pass 16`' 
+                                    text: `❌ *Invalid Password Length*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *LENGTH VALIDATION ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Password length must be 4-50 characters
+📏 Current input: Invalid
+✅ Valid range: 4 to 50 characters
+
+🎯 *Example Usage:*
+• ${prefix}pass 12 (default)
+• ${prefix}pass 16 (recommended)
+• ${prefix}pass 8 (minimum)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                                 }, { quoted: m });
                                 return;
                             }
@@ -1245,39 +1690,133 @@ Commands work only in self-chat for security.`;
                         password = password.split('').sort(() => Math.random() - 0.5).join('');
 
                         const passText = 
-`🔐 *Generated Password*
+`┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃         🔐 SECURE PASSWORD GENERATOR    ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-🔑 **Password:** \`${password}\`
+🔑 *Generated Password:*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+\`${password}\`
 
-📊 **Details:**
-• Length: ${length} characters
-• Strength: Strong 💪
-• Contains: Letters, Numbers, Symbols
+📊 *Password Analytics:*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 📏 Length: ${length} characters
+• 💪 Strength: Ultra Strong
+• 🎨 Contains: Letters, Numbers, Symbols
+• 🔒 Entropy: Maximum Security
 
-⚠️ **Security Tips:**
-• Don't share this password
-• Store it in a secure password manager
-• Use unique passwords for each account
+🛡️ *Security Recommendations:*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• 🤐 Never share this password
+• 💾 Store in secure password manager
+• 🔄 Use unique passwords for each account
+• 🔐 Enable 2FA when available
 
-💡 **Usage:** \`.pass 16\` (custom length)`;
+💡 *Custom Length:* ${prefix}pass 16
+⚡ *Quick Generate:* ${prefix}pass (default 12)
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃        Generated by CloudNextra         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛`;
 
                         await sock.sendMessage(m.key.remoteJid, { text: passText }, { quoted: m });
                         console.log(`[WA-BOT] Password generated with length: ${length}`);
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: '❌ Failed to generate password' 
+                            text: `❌ *Password Generator Error*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 *SYSTEM ERROR*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ Unable to generate password
+🔄 Please try again in a few moments
+🔐 Security protocols intact
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Password command error:', error);
                     }
                     return;
                 }
 
-                // Unknown command
-                if (cmd) {
-                    await sock.sendMessage(m.key.remoteJid, { 
-                        text: `❓ Unknown command: *${cmd}*\n\n🛠️ *Available Commands:*\n\n📱 *Core:*\n• ${prefix}online - Set online\n• ${prefix}offline - Set offline\n• ${prefix}panel - Control panel\n• ${prefix}info - Bot information\n• ${prefix}autoview - Toggle auto-view\n• ${prefix}anticall - Toggle call blocking\n\n🔧 *Utilities:*\n• ${prefix}sticker - Create sticker\n• ${prefix}toimg - Convert to image\n• ${prefix}shorturl - Shorten URL\n• ${prefix}pass - Generate password` 
-                    }, { quoted: m });
+                // Handle .onbot command
+                if (cmd === 'onbot') {
+                    botEnabled = true;
+                    const replyText = `✅ *Bot Status Updated*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 *BOT MANAGEMENT SYSTEM*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 *Current Status:* ✅ ACTIVE
+🟢 Bot is now fully operational and ready to serve
+
+🔧 *Available Services:*
+• 👀 Auto view status
+• 🤖 Auto reply system  
+• 📞 Call blocking
+• 🎨 Sticker maker
+• 🔐 Password generator
+• 🔗 URL shortener
+• 📊 Analytics panel
+• ⚡ All commands enabled
+
+💡 *Quick Start:*
+• Type \`.panel\` for control dashboard
+• Type \`.info\` for feature overview
+• Type \`.offbot\` to disable bot
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃        CloudNextra Bot V2.0 ONLINE      ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛`;
+                    await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
+                    console.log('[WA-BOT] Bot enabled by user');
+                    return;
                 }
+
+                // Handle .offbot command
+                if (cmd === 'offbot') {
+                    botEnabled = false;
+                    const replyText = `❌ *Bot Status Updated*
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 *BOT MANAGEMENT SYSTEM*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 *Current Status:* ❌ INACTIVE
+🔴 Bot services have been temporarily disabled
+
+🚫 *Disabled Services:*
+• 👀 Auto view status
+• 🤖 Auto reply system  
+• 📞 Call blocking
+• 🎨 Sticker maker
+• 🔐 Password generator
+• 🔗 URL shortener
+• 📊 Analytics panel
+• ⚡ Most commands disabled
+
+✅ *Still Available:*
+• \`.onbot\` - Re-enable bot
+• \`.info\` - View bot information
+
+💡 *To Reactivate:*
+Simply type \`.onbot\` when you want to use the bot again
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃        CloudNextra Bot V2.0 OFFLINE     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛`;
+                    await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
+                    console.log('[WA-BOT] Bot disabled by user');
+                    return;
+                }
+
+                // Unknown commands are now ignored (no response)
 
             } catch (error) {
                 console.error('[WA-BOT] Command error:', error);

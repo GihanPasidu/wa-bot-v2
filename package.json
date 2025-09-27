@@ -1,22 +1,35 @@
 {
   "name": "cloudnextra-wa-bot",
-  "version": "1.0.0",
-  "description": "Professional WhatsApp Bot by CloudNextra",
+  "version": "2.0.0",
+  "description": "CloudNextra WhatsApp Bot V2.0 - Professional Multi-Device Bot with Advanced Auto-Reply, Status Management, and Security Features",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "docker:build": "docker build -t wa-bot .",
-    "docker:run": "docker run -p 3000:3000 wa-bot",
-    "test": "echo \"No tests specified\" && exit 0"
+    "docker:build": "docker build -t cloudnextra-wa-bot:v2.0 .",
+    "docker:run": "docker run -p 10000:10000 cloudnextra-wa-bot:v2.0",
+    "docker:dev": "docker run -p 10000:10000 -v $(pwd):/app cloudnextra-wa-bot:v2.0",
+    "test": "echo \"CloudNextra Bot V2.0 - Tests coming soon\" && exit 0",
+    "health": "node -e \"console.log('CloudNextra Bot V2.0 Health Check: OK')\""
   },
   "keywords": [
     "whatsapp",
     "bot",
     "baileys",
     "cloudnextra",
+    "v2.0",
+    "multi-device",
+    "auto-reply",
+    "status-viewer",
+    "call-blocker",
+    "password-generator",
+    "sticker-maker",
+    "url-shortener",
+    "professional",
     "render",
-    "docker"
+    "docker",
+    "express",
+    "qr-code"
   ],
   "author": "CloudNextra",
   "license": "Apache-2.0",

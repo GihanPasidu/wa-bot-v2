@@ -40,9 +40,6 @@ ENV TZ=UTC
 # Install runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    ffmpeg \
-    imagemagick \
-    webp \
     curl \
     ca-certificates \
     && apt-get upgrade -y \

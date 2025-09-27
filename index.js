@@ -11,10 +11,78 @@ const express = require('express');
 const QRCode = require('qrcode');
 const KeepAliveService = require('./keep-alive');
 
-// CloudNextra WhatsApp Bot V2.0 - Enhanced Configuration
+// CloudNextra WhatsApp Bot V2.0 - Enhanced Authentication Functions
 const BOT_VERSION = '2.0.0';
 const BOT_NAME = 'CloudNextra Bot V2.0';
 const BOT_DESCRIPTION = 'Professional WhatsApp Bot with Advanced Features';
+
+// Helper function to check if auth_info is empty or invalid
+function isAuthInfoEmpty() {
+    try {
+        const authPath = './auth_info';
+        
+        // Check if directory exists
+        if (!fs.existsSync(authPath)) {
+            console.log('[WA-BOT] 🔄 Auth directory does not exist, creating...');
+            fs.mkdirSync(authPath, { recursive: true });
+            return true;
+        }
+
+        // Check if directory is empty
+        const files = fs.readdirSync(authPath);
+        const authFiles = files.filter(file => 
+            file.endsWith('.json') && 
+            !file.startsWith('.') && 
+            fs.statSync(path.join(authPath, file)).size > 0
+        );
+
+        if (authFiles.length === 0) {
+            console.log('[WA-BOT] 📱 Auth directory is empty - New device registration required');
+            return true;
+        }
+
+        // Check if creds.json exists and is valid
+        const credsPath = path.join(authPath, 'creds.json');
+        if (fs.existsSync(credsPath)) {
+            try {
+                const credsData = fs.readFileSync(credsPath, 'utf8');
+                const creds = JSON.parse(credsData);
+                
+                // Check if essential fields exist
+                if (!creds.noiseKey || !creds.signedIdentityKey || creds.registered === false) {
+                    console.log('[WA-BOT] 🔄 Invalid or incomplete credentials - New registration needed');
+                    return true;
+                }
+            } catch (error) {
+                console.log('[WA-BOT] ❌ Corrupted credentials file - New registration needed');
+                return true;
+            }
+        }
+
+        console.log('[WA-BOT] ✅ Valid authentication found');
+        return false;
+    } catch (error) {
+        console.error('[WA-BOT] Error checking auth info:', error);
+        return true;
+    }
+}
+
+// Helper function to clear auth_info for fresh registration
+function clearAuthInfo() {
+    try {
+        const authPath = './auth_info';
+        if (fs.existsSync(authPath)) {
+            fs.rmSync(authPath, { recursive: true, force: true });
+            console.log('[WA-BOT] 🗑️ Cleared auth_info directory');
+        }
+        fs.mkdirSync(authPath, { recursive: true });
+        console.log('[WA-BOT] 📁 Created fresh auth_info directory');
+        return true;
+    } catch (error) {
+        console.error('[WA-BOT] Error clearing auth info:', error);
+        return false;
+    }
+}
 
 // Express app for health checks and V2.0 web interface
 const app = express();
@@ -551,6 +619,15 @@ async function connectToWhatsApp() {
     try {
         // Use Docker-friendly auth path
         const authPath = process.env.RENDER ? '/app/auth_info' : 'auth_info';
+        
+        // Check if we need fresh registration (empty or invalid auth_info)
+        if (isAuthInfoEmpty()) {
+            console.log('[WA-BOT] 🆕 Fresh device registration required');
+            console.log('[WA-BOT] 📱 New QR code will be generated');
+            qrCodeData = null;
+            connectionStatus = 'registering';
+        }
+        
         const { state, saveCreds } = await useMultiFileAuthState(authPath);
         const { version } = await fetchLatestBaileysVersion();
 
@@ -582,16 +659,16 @@ async function connectToWhatsApp() {
                                 await sock.sendMessage(call.from, {
                                     text: `📞 *Call Blocked* - Automated Response
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🛡️ *CALL PROTECTION ACTIVE*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 Your call has been automatically blocked by CloudNextra Bot V2.0.
 
 🔒 *Reason:* Call blocking is currently enabled
 📱 *Alternative:* Please send a text message instead
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ⚡ Powered by CloudNextra Bot V2.0`
                                 });
@@ -627,13 +704,26 @@ Your call has been automatically blocked by CloudNextra Bot V2.0.
         sock.ev.on('connection.update', (update) => {
             const { connection, lastDisconnect, qr } = update;
 
-            // Handle QR code - IMPROVED LOGGING
+            // Handle QR code - ENHANCED FOR FRESH REGISTRATION
             if (qr) {
                 qrCodeData = qr;
                 lastQRUpdate = new Date().toISOString();
                 connectionStatus = 'qr_ready';
                 console.log('[WA-BOT] ✅ QR Code generated and stored for web display');
+                console.log('[WA-BOT] 📱 Fresh device registration - Please scan QR code');
+                console.log('[WA-BOT] 🌐 QR available at: http://localhost:' + PORT + '/qr');
                 console.log('[WA-BOT] QR Code length:', qr.length);
+                console.log('');
+                console.log('┌─────────────────────────────────────┐');
+                console.log('│       📱 NEW DEVICE REGISTRATION       │');
+                console.log('├─────────────────────────────────────┤');
+                console.log('│  1. Open WhatsApp on your phone       │');
+                console.log('│  2. Go to Settings → Linked Devices   │');
+                console.log('│  3. Tap "Link a Device"               │');
+                console.log('│  4. Scan the QR code above            │');
+                console.log('│  5. Or visit: http://localhost:' + PORT.toString().padEnd(4) + ' │');
+                console.log('└─────────────────────────────────────┘');
+                console.log('');
             }
 
             if (connection === 'close') {
@@ -653,14 +743,15 @@ Your call has been automatically blocked by CloudNextra Bot V2.0.
 
                 console.log('[WA-BOT] Connection closed:', errorMsg, 'Code:', statusCode, 'Reconnect:', shouldReconnect);
 
-                // Non-recoverable device/session removal
+                // Enhanced 401/Device removal handling
                 if (isDeviceRemoved || statusCode === 401) {
-                    console.warn('[WA-BOT] Device/session removed. Clearing local auth and re-registering.');
-                    try {
-                        fs.rmSync(authPath, { recursive: true, force: true });
-                        console.log('[WA-BOT] Local auth_info cleared.');
-                    } catch (e) {
-                        console.error('[WA-BOT] Failed to clear local auth:', e);
+                    console.warn('[WA-BOT] 🚫 Device/session removed or authentication failed (401)');
+                    console.log('[WA-BOT] 🗑️ Clearing local auth and preparing fresh registration...');
+                    
+                    // Clear authentication using helper function
+                    if (clearAuthInfo()) {
+                        console.log('[WA-BOT] ✅ Auth cleared successfully');
+                        console.log('[WA-BOT] 📱 Fresh QR code will be generated on next connection');
                     }
 
                     try { sock.end?.(); } catch (e) { /* ignore */ }
@@ -669,12 +760,13 @@ Your call has been automatically blocked by CloudNextra Bot V2.0.
                     retryCount++;
                     if (retryCount < maxRetries) {
                         const delay = config.reconnectDelayOnAuthReset ?? 3000;
+                        console.log(`[WA-BOT] 🔄 Retrying connection in ${delay/1000}s (${retryCount}/${maxRetries})`);
                         setTimeout(() => {
                             isConnecting = false;
                             connectToWhatsApp();
                         }, delay);
                     } else {
-                        console.error('[WA-BOT] Max retries after auth reset. Exiting.');
+                        console.error('[WA-BOT] ❌ Max retries after auth reset. Exiting.');
                         setTimeout(() => process.exit(1), 1000);
                     }
                     return;
@@ -815,9 +907,9 @@ Your call has been automatically blocked by CloudNextra Bot V2.0.
                     const emoji = autoViewEnabled ? '✅' : '❌';
                     const replyText = `${emoji} *Auto View Status Updated*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 👀 *AUTO VIEW MANAGEMENT*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 📋 *Current Status:* ${autoViewEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
 ${autoViewEnabled ? '🟢 Status updates will be automatically viewed' : '🔴 Status auto-viewing is currently disabled'}
@@ -832,7 +924,7 @@ ${autoViewEnabled ? '🟢 Status updates will be automatically viewed' : '🔴 S
 • 🚫 Does NOT view regular chat messages
 • 🔒 Maintains your privacy in conversations
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+`;
                     await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
                     return;
                 }
@@ -848,9 +940,9 @@ ${autoViewEnabled ? '🟢 Status updates will be automatically viewed' : '🔴 S
                     
                     const replyText = `${emoji} *Auto Reply Status Updated*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🤖 *AUTO REPLY MANAGEMENT*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 📋 *Current Status:* ${autoReplyEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
 ${autoReplyEnabled ? '🟢 System will automatically respond to keyword messages' : '🔴 Automatic responses are currently disabled'}
@@ -869,7 +961,7 @@ ${sampleKeywords}... and more
 • 🚫 Ignores your own messages
 • ⚡ Natural delay: 1-3 seconds
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+`;
                     await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
                     return;
                 }
@@ -1120,12 +1212,12 @@ ${sampleKeywords}... and more
                     const uptimeFormatted = `${hours}h ${minutes}m ${seconds}s`;
                     
                     const infoText = 
-`┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃        🚀 CLOUDNEXTRA BOT V2.0 INFO     ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+`
+        🚀 CLOUDNEXTRA BOT V2.0 INFO     
+
 
 � *System Status:*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 • 🤖 Bot Status: ${botEnabled ? '🟢 ACTIVE' : '🔴 INACTIVE'}
 • 🌐 Connection: ${connectionStatus === 'connected' ? '🟢 ONLINE' : '🔴 OFFLINE'}
 • 👤 Presence: ${currentPresence === 'available' ? '🟢 AVAILABLE' : '🔴 AWAY'}
@@ -1135,21 +1227,22 @@ ${sampleKeywords}... and more
 • 🌍 Environment: ${process.env.NODE_ENV || 'development'}
 
 ⚙️ *Feature Status:*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 • 👀 Auto View Status: ${autoViewEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
 • 🤖 Auto Reply: ${autoReplyEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
 • 📞 Call Blocking: ${global.callBlockEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
 
 📊 *Performance Analytics:*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 • 👁️ Status Viewed: ${viewedStatusCount}
 • 💬 Auto Replies Sent: ${autoReplyCount}
 • ⚡ Commands Processed: Available
 
 🛠️ *Core Commands:*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 • ${prefix}onbot - 🟢 Enable bot services
 • ${prefix}offbot - 🔴 Disable bot services
+• ${prefix}newqr - 📱 Generate new QR code
 • ${prefix}online - 🟢 Set presence to online
 • ${prefix}offline - 🔴 Set presence to offline
 • ${prefix}panel - 📋 Show control panel
@@ -1159,19 +1252,19 @@ ${sampleKeywords}... and more
 • ${prefix}anticall - 📞 Toggle call blocking
 
 🔧 *Utility Commands:*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 • ${prefix}sticker - 🏷️ Create sticker from image
 • ${prefix}toimg - 🖼️ Convert sticker to image
 • ${prefix}shorturl - 🔗 Shorten URL
 • ${prefix}pass - 🔐 Generate secure password
 
 🔐 *Security Notice:*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 All commands work exclusively in self-chat for maximum security and privacy.
 
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃           Powered by CloudNextra          ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛`;
+
+           Powered by CloudNextra          
+`;
                     await sock.sendMessage(m.key.remoteJid, { text: infoText }, { quoted: m });
                     return;
                 }
@@ -1184,30 +1277,30 @@ All commands work exclusively in self-chat for maximum security and privacy.
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `🟢 *Presence Status Updated*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 👤 *ONLINE STATUS ACTIVATED*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ✅ Your WhatsApp presence is now set to: *ONLINE*
 🌐 You will appear as available to your contacts
 ⚡ Status change applied successfully
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                         }, { quoted: m });
                         console.log('[WA-BOT] Presence set to online');
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `❌ *Presence Update Failed*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔧 *SYSTEM ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ⚠️ Unable to update presence to online
 🔄 Please try again in a few moments
 📞 If issue persists, check your connection
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Online command error:', error);
                     }
@@ -1222,30 +1315,30 @@ All commands work exclusively in self-chat for maximum security and privacy.
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `🔴 *Presence Status Updated*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 👤 *OFFLINE STATUS ACTIVATED*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ✅ Your WhatsApp presence is now set to: *OFFLINE*
 🌙 You will appear as away to your contacts
 ⚡ Status change applied successfully
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                         }, { quoted: m });
                         console.log('[WA-BOT] Presence set to offline');
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `❌ *Presence Update Failed*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔧 *SYSTEM ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ⚠️ Unable to update presence to offline
 🔄 Please try again in a few moments
 📞 If issue persists, check your connection
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Offline command error:', error);
                     }
@@ -1262,9 +1355,9 @@ All commands work exclusively in self-chat for maximum security and privacy.
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `📞 *Call Protection Status Updated*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🛡️ *CALL BLOCKING ${isCallBlockEnabled ? 'ACTIVATED' : 'DEACTIVATED'}*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 📋 *Current Status:* ${isCallBlockEnabled ? '✅ ACTIVE' : '❌ INACTIVE'}
 ${isCallBlockEnabled ? '🔴 Incoming calls will be automatically rejected' : '🟢 Incoming calls will be accepted normally'}
@@ -1275,22 +1368,22 @@ ${isCallBlockEnabled ? '🔴 Incoming calls will be automatically rejected' : '�
 • ⚡ Instant call termination
 • 🔒 Secure call management
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                         }, { quoted: m });
                         console.log(`[WA-BOT] Call blocking ${isCallBlockEnabled ? 'enabled' : 'disabled'}`);
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `❌ *Call Protection Update Failed*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔧 *SYSTEM ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ⚠️ Unable to toggle call blocking feature
 🔄 Please try again in a few moments
 📞 If issue persists, restart the bot
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Anticall command error:', error);
                     }
@@ -1309,30 +1402,27 @@ ${isCallBlockEnabled ? '🔴 Incoming calls will be automatically rejected' : '�
 `       🎛️ CONTROL PANEL DASHBOARD
 
 ⚙️ *Feature Controls:*
-━━━━━━━━━━━━━━━━━━━━━━━
+
 • 👀 Auto View: ${autoViewEnabled ? '🟢 ACTIVE' : '🔴 INACTIVE'}
 • 🤖 Auto Reply: ${autoReplyEnabled ? '🟢 ACTIVE' : '🔴 INACTIVE'}
 • 📞 Call Block: ${global.callBlockEnabled ? '🟢 ACTIVE' : '🔴 INACTIVE'}
 
 📊 *Performance Analytics:*
-━━━━━━━━━━━━━━━━━━━━━━━
+
 • 👁️ Status Viewed: ${viewedStatusCount}
 • 💬 Auto Replies: ${autoReplyCount}
-• ⚡ Commands Available: All Systems Go
 
 🎯 *Quick Actions:*
-━━━━━━━━━━━━━━━━━━━━━━━
+
 • ${prefix}onbot - 🟢 Enable bot services
 • ${prefix}offbot - 🔴 Disable bot services
+• ${prefix}newqr - 📱 Generate new QR code
 • ${prefix}online - 🟢 Set online presence
 • ${prefix}offline - 🔴 Set offline presence
 • ${prefix}info - ℹ️ Detailed bot information
 • ${prefix}autoview - 👀 Toggle auto status view
 • ${prefix}autoreply - 🤖 Toggle auto reply
 • ${prefix}anticall - 📞 Toggle call blocking
-
-🔧 *Utility Tools:*
-━━━━━━━━━━━━━━━━━━━━━━━
 • ${prefix}sticker - 🏷️ Create sticker from image
 • ${prefix}toimg - 🖼️ Convert sticker to image
 • ${prefix}shorturl - 🔗 Shorten any URL
@@ -1343,72 +1433,174 @@ ${isCallBlockEnabled ? '🔴 Incoming calls will be automatically rejected' : '�
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `❌ *Control Panel Error*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔧 *SYSTEM ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ⚠️ Unable to load control panel
 🔄 Please try again in a few moments
 📞 If issue persists, restart the bot
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Panel command error:', error);
                     }
                     return;
                 }
 
-                // Handle .sticker command
+                // Handle .sticker command with retry logic
                 if (cmd === 'sticker') {
                     try {
-                        if (m.message?.imageMessage || m.quoted?.message?.imageMessage) {
-                            const imageMsg = m.message?.imageMessage || m.quoted?.message?.imageMessage;
-                            
+                        // Debug: Log message structure
+                        console.log('[DEBUG] Sticker command - Message type:', messageType);
+                        console.log('[DEBUG] Has quoted message:', !!m.message?.extendedTextMessage?.contextInfo?.quotedMessage);
+                        
+                        let mediaMessage = null;
+                        let mediaType = null;
+                        
+                        // Check current message for image
+                        if (m.message?.imageMessage) {
+                            mediaMessage = m;
+                            mediaType = 'image';
+                            console.log('[DEBUG] Found image in current message');
+                        }
+                        // Check current message for video
+                        else if (m.message?.videoMessage) {
+                            mediaMessage = m;
+                            mediaType = 'video';
+                            console.log('[DEBUG] Found video in current message');
+                        }
+                        // Check quoted message for image
+                        else if (m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage) {
+                            // Create quoted message object
+                            mediaMessage = {
+                                key: m.message.extendedTextMessage.contextInfo.stanzaId ? {
+                                    ...m.key,
+                                    id: m.message.extendedTextMessage.contextInfo.stanzaId
+                                } : m.key,
+                                message: {
+                                    imageMessage: m.message.extendedTextMessage.contextInfo.quotedMessage.imageMessage
+                                }
+                            };
+                            mediaType = 'image';
+                            console.log('[DEBUG] Found image in quoted message');
+                        }
+                        // Check quoted message for video
+                        else if (m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.videoMessage) {
+                            mediaMessage = {
+                                key: m.message.extendedTextMessage.contextInfo.stanzaId ? {
+                                    ...m.key,
+                                    id: m.message.extendedTextMessage.contextInfo.stanzaId
+                                } : m.key,
+                                message: {
+                                    videoMessage: m.message.extendedTextMessage.contextInfo.quotedMessage.videoMessage
+                                }
+                            };
+                            mediaType = 'video';
+                            console.log('[DEBUG] Found video in quoted message');
+                        }
+                        
+                        if (mediaMessage && mediaType) {
                             await sock.sendMessage(m.key.remoteJid, { 
-                                text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃           🏷️ STICKER PROCESSING         ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                text: `
+           🏷️ STICKER PROCESSING         
+
 
 ⚡ *Creating Sticker...*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-🎨 Processing your image
+
+🎨 Processing your ${mediaType}
 📦 Optimizing quality
 🚀 Almost ready...` 
                             }, { quoted: m });
                             
-                            try {
-                                const media = await downloadMediaMessage(m.quoted || m, 'buffer', {});
-                                
-                                await sock.sendMessage(m.key.remoteJid, {
-                                    sticker: media,
-                                }, { quoted: m });
-                                
-                                console.log('[WA-BOT] Sticker created successfully');
-                            } catch (downloadError) {
-                                await sock.sendMessage(m.key.remoteJid, { 
-                                    text: `❌ *Sticker Creation Failed*
+                            // Retry logic for network issues
+                            let attempts = 0;
+                            const maxAttempts = 3;
+                            let success = false;
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔧 *PROCESSING ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                            while (attempts < maxAttempts && !success) {
+                                attempts++;
+                                try {
+                                    console.log(`[DEBUG] Attempting to download media... (Attempt ${attempts}/${maxAttempts})`);
+                                    
+                                    // Add timeout for download
+                                    const downloadTimeout = new Promise((_, reject) =>
+                                        setTimeout(() => reject(new Error('Download timeout after 20 seconds')), 20000)
+                                    );
+                                    
+                                    const downloadPromise = downloadMediaMessage(mediaMessage, 'buffer', {});
+                                    
+                                    const mediaBuffer = await Promise.race([downloadPromise, downloadTimeout]);
+                                    
+                                    if (mediaBuffer && mediaBuffer.length > 0) {
+                                        console.log(`[DEBUG] Media downloaded successfully, size: ${mediaBuffer.length} bytes`);
+                                        
+                                        await sock.sendMessage(m.key.remoteJid, {
+                                            sticker: mediaBuffer,
+                                        }, { quoted: m });
+                                        
+                                        console.log('[WA-BOT] Sticker created successfully');
+                                        success = true;
+                                    } else {
+                                        throw new Error('Downloaded buffer is empty');
+                                    }
+                                    
+                                } catch (downloadError) {
+                                    console.error(`[DEBUG] Media download failed (attempt ${attempts}):`, downloadError.message);
+                                    
+                                    if (attempts === maxAttempts) {
+                                        // Final attempt failed - send error message
+                                        let errorType = 'Network Error';
+                                        let errorSuggestion = 'Check your internet connection and try again';
+                                        
+                                        if (downloadError.message.includes('timeout')) {
+                                            errorType = 'Connection Timeout';
+                                            errorSuggestion = 'Server is slow, try again in a few seconds';
+                                        } else if (downloadError.message.includes('ECONNRESET')) {
+                                            errorType = 'Connection Reset';
+                                            errorSuggestion = 'Network interruption, try again shortly';
+                                        }
+                                        
+                                        await sock.sendMessage(m.key.remoteJid, { 
+                                            text: `❌ *Sticker Creation Failed*
 
-⚠️ Unable to process this image
-🔄 Please try with a different image
-📷 Ensure image is clear and valid format
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
-                                }, { quoted: m });
-                                console.error('[WA-BOT] Sticker creation error:', downloadError);
+🔧 *${errorType.toUpperCase()}*
+
+
+⚠️ Failed after ${maxAttempts} attempts
+🔄 ${errorSuggestion}
+📷 Ensure ${mediaType} is accessible
+
+� *Quick Fixes:*
+• Wait 10 seconds and try again
+• Use a smaller image
+• Check WhatsApp connection
+• Try with different ${mediaType}
+
+*Error:* ${errorType}
+
+` 
+                                        }, { quoted: m });
+                                        console.error('[WA-BOT] Sticker creation failed after all attempts:', downloadError);
+                                    } else {
+                                        // Wait before retry (exponential backoff)
+                                        const waitTime = 1000 * Math.pow(2, attempts - 1); // 1s, 2s, 4s...
+                                        console.log(`[DEBUG] Waiting ${waitTime}ms before retry...`);
+                                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                                    }
+                                }
                             }
                         } else {
+                            console.log('[DEBUG] No suitable media found for sticker creation');
                             await sock.sendMessage(m.key.remoteJid, { 
-                                text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃        🏷️ STICKER CREATION HELP         ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                text: `
+        🏷️ STICKER CREATION HELP         
+
 
 ❌ *Image Required*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 📋 *How to Create Sticker:*
 • 📷 Send image with caption ${prefix}sticker
@@ -1422,85 +1614,168 @@ Reply to any image and type:
 ⚡ *Processing Speed:* Ultra Fast
 🎨 *Quality:* HD Optimized
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                             }, { quoted: m });
                         }
                     } catch (error) {
+                        console.error('[DEBUG] Sticker command error:', error);
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `❌ *Sticker Command Error*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔧 *SYSTEM ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ⚠️ Unable to process command
 🔄 Please try again in a few moments
 📞 If issue persists, restart the bot
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+*Error Details:* ${error.message}
+
+` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Sticker command error:', error);
                     }
                     return;
                 }
 
-                // Handle .toimg command
+                // Handle .toimg command with retry logic
                 if (cmd === 'toimg') {
                     try {
-                        if (m.quoted?.message?.stickerMessage) {
+                        // Debug: Log message structure
+                        console.log('[DEBUG] ToImg command - Message type:', messageType);
+                        console.log('[DEBUG] Has quoted message:', !!m.message?.extendedTextMessage?.contextInfo?.quotedMessage);
+                        
+                        let stickerMessage = null;
+                        
+                        // Check quoted message for sticker
+                        if (m.message?.extendedTextMessage?.contextInfo?.quotedMessage?.stickerMessage) {
+                            stickerMessage = {
+                                key: m.message.extendedTextMessage.contextInfo.stanzaId ? {
+                                    ...m.key,
+                                    id: m.message.extendedTextMessage.contextInfo.stanzaId
+                                } : m.key,
+                                message: {
+                                    stickerMessage: m.message.extendedTextMessage.contextInfo.quotedMessage.stickerMessage
+                                }
+                            };
+                            console.log('[DEBUG] Found sticker in quoted message');
+                        }
+                        // Check current message for sticker (if replied to with sticker)
+                        else if (m.message?.stickerMessage) {
+                            stickerMessage = m;
+                            console.log('[DEBUG] Found sticker in current message');
+                        }
+                        
+                        if (stickerMessage) {
                             await sock.sendMessage(m.key.remoteJid, { 
-                                text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃         🖼️ STICKER CONVERSION           ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                text: `
+         🖼️ STICKER CONVERSION           
+
 
 ⚡ *Converting to Image...*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 🎨 Processing sticker
 📷 Converting format
 🚀 Almost ready...` 
                             }, { quoted: m });
                             
-                            try {
-                                const media = await downloadMediaMessage(m.quoted, 'buffer', {});
-                                
-                                await sock.sendMessage(m.key.remoteJid, {
-                                    image: media,
-                                    caption: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃          🖼️ CONVERSION COMPLETE         ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                            // Retry logic for network issues
+                            let attempts = 0;
+                            const maxAttempts = 3;
+                            let success = false;
+
+                            while (attempts < maxAttempts && !success) {
+                                attempts++;
+                                try {
+                                    console.log(`[DEBUG] Attempting to download sticker... (Attempt ${attempts}/${maxAttempts})`);
+                                    
+                                    // Add timeout for download
+                                    const downloadTimeout = new Promise((_, reject) =>
+                                        setTimeout(() => reject(new Error('Download timeout after 20 seconds')), 20000)
+                                    );
+                                    
+                                    const downloadPromise = downloadMediaMessage(stickerMessage, 'buffer', {});
+                                    
+                                    const mediaBuffer = await Promise.race([downloadPromise, downloadTimeout]);
+                                    
+                                    if (mediaBuffer && mediaBuffer.length > 0) {
+                                        console.log(`[DEBUG] Sticker downloaded successfully, size: ${mediaBuffer.length} bytes`);
+                                        
+                                        await sock.sendMessage(m.key.remoteJid, {
+                                            image: mediaBuffer,
+                                            caption: `
+          🖼️ CONVERSION COMPLETE         
+
 
 ✅ *Successfully Converted*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🏷️ Sticker → 🖼️ Image
 📱 Ready to save or share!`
-                                }, { quoted: m });
-                                
-                                console.log('[WA-BOT] Sticker converted to image successfully');
-                            } catch (downloadError) {
-                                await sock.sendMessage(m.key.remoteJid, { 
-                                    text: `❌ *Conversion Failed*
+                                        }, { quoted: m });
+                                        
+                                        console.log('[WA-BOT] Sticker converted to image successfully');
+                                        success = true;
+                                    } else {
+                                        throw new Error('Downloaded buffer is empty');
+                                    }
+                                    
+                                } catch (downloadError) {
+                                    console.error(`[DEBUG] Sticker download failed (attempt ${attempts}):`, downloadError.message);
+                                    
+                                    if (attempts === maxAttempts) {
+                                        // Final attempt failed - send error message
+                                        let errorType = 'Network Error';
+                                        let errorSuggestion = 'Check your internet connection and try again';
+                                        
+                                        if (downloadError.message.includes('timeout')) {
+                                            errorType = 'Connection Timeout';
+                                            errorSuggestion = 'Server is slow, try again in a few seconds';
+                                        } else if (downloadError.message.includes('ECONNRESET')) {
+                                            errorType = 'Connection Reset';
+                                            errorSuggestion = 'Network interruption, try again shortly';
+                                        }
+                                        
+                                        await sock.sendMessage(m.key.remoteJid, { 
+                                            text: `❌ *Conversion Failed*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔧 *PROCESSING ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-⚠️ Unable to convert this sticker
-🔄 Please try with a different sticker
-🏷️ Ensure sticker is valid format
+🔧 *${errorType.toUpperCase()}*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
-                                }, { quoted: m });
-                                console.error('[WA-BOT] Sticker to image conversion error:', downloadError);
+
+⚠️ Failed after ${maxAttempts} attempts
+🔄 ${errorSuggestion}
+🏷️ Ensure sticker is accessible
+
+� *Quick Fixes:*
+• Wait 10 seconds and try again
+• Use different sticker
+• Check WhatsApp connection
+• Restart bot if problem persists
+
+*Error:* ${errorType}
+
+` 
+                                        }, { quoted: m });
+                                        console.error('[WA-BOT] Sticker to image conversion failed after all attempts:', downloadError);
+                                    } else {
+                                        // Wait before retry (exponential backoff)
+                                        const waitTime = 1000 * Math.pow(2, attempts - 1); // 1s, 2s, 4s...
+                                        console.log(`[DEBUG] Waiting ${waitTime}ms before retry...`);
+                                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                                    }
+                                }
                             }
                         } else {
+                            console.log('[DEBUG] No suitable sticker found for conversion');
                             await sock.sendMessage(m.key.remoteJid, { 
-                                text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃        🖼️ CONVERSION HELP GUIDE         ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                text: `
+        🖼️ CONVERSION HELP GUIDE         
+
 
 ❌ *Sticker Required*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 📋 *How to Convert:*
 • 🏷️ Reply to any sticker with ${prefix}toimg
@@ -1514,22 +1789,25 @@ Reply to any sticker and type:
 ⚡ *Processing Speed:* Ultra Fast
 🖼️ *Output:* High Quality Image
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                             }, { quoted: m });
                         }
                     } catch (error) {
+                        console.error('[DEBUG] ToImg command error:', error);
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `❌ *Image Conversion Error*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔧 *SYSTEM ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ⚠️ Unable to process command
 🔄 Please try again in a few moments
 📞 If issue persists, restart the bot
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+*Error Details:* ${error.message}
+
+` 
                         }, { quoted: m });
                         console.error('[WA-BOT] ToImg command error:', error);
                     }
@@ -1541,12 +1819,12 @@ Reply to any sticker and type:
                     try {
                         if (!args.trim()) {
                             await sock.sendMessage(m.key.remoteJid, { 
-                                text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃          🔗 URL SHORTENER HELP          ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                text: `
+          🔗 URL SHORTENER HELP          
+
 
 ❌ *URL Required*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 📋 *How to Use:*
 • 🌐 Format: ${prefix}shorturl [URL]
@@ -1561,7 +1839,7 @@ Reply to any sticker and type:
 • 🔒 Secure shortened links
 • 📊 Click tracking available
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                             }, { quoted: m });
                             return;
                         }
@@ -1573,30 +1851,30 @@ Reply to any sticker and type:
                             await sock.sendMessage(m.key.remoteJid, { 
                                 text: `❌ *Invalid URL Format*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔧 *URL VALIDATION ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ⚠️ URL must start with http:// or https://
 ✅ Example: https://www.google.com
 🔗 Please provide a valid URL format
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                             }, { quoted: m });
                             return;
                         }
 
                         await sock.sendMessage(m.key.remoteJid, { 
-                            text: `┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃          🔗 URL SHORTENER SERVICE       ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                            text: `
+          🔗 URL SHORTENER SERVICE       
+
 
 📋 *Original URL:*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 ${url}
 
 ⚠️ *Demo Mode Active*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 🚧 *Service Implementation Required:*
 • 🔗 bit.ly API integration
@@ -1610,7 +1888,7 @@ ${url}
 • 🔒 Secure link validation
 • ⚡ Instant processing
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                         }, { quoted: m });
                         
                         console.log('[WA-BOT] URL shortening requested for:', url);
@@ -1618,15 +1896,15 @@ ${url}
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `❌ *URL Shortener Error*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔧 *PROCESSING ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ⚠️ Unable to process URL
 🔄 Please try again with valid URL
 🌐 Ensure URL is accessible
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Shorturl command error:', error);
                     }
@@ -1646,9 +1924,9 @@ ${url}
                                 await sock.sendMessage(m.key.remoteJid, { 
                                     text: `❌ *Invalid Password Length*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔧 *LENGTH VALIDATION ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ⚠️ Password length must be 4-50 characters
 📏 Current input: Invalid
@@ -1659,7 +1937,7 @@ ${url}
 • ${prefix}pass 16 (recommended)
 • ${prefix}pass 8 (minimum)
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                                 }, { quoted: m });
                                 return;
                             }
@@ -1690,23 +1968,23 @@ ${url}
                         password = password.split('').sort(() => Math.random() - 0.5).join('');
 
                         const passText = 
-`┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃         🔐 SECURE PASSWORD GENERATOR    ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+`
+         🔐 SECURE PASSWORD GENERATOR    
+
 
 🔑 *Generated Password:*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 \`${password}\`
 
 📊 *Password Analytics:*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 • 📏 Length: ${length} characters
 • 💪 Strength: Ultra Strong
 • 🎨 Contains: Letters, Numbers, Symbols
 • 🔒 Entropy: Maximum Security
 
 🛡️ *Security Recommendations:*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 • 🤐 Never share this password
 • 💾 Store in secure password manager
 • 🔄 Use unique passwords for each account
@@ -1715,9 +1993,9 @@ ${url}
 💡 *Custom Length:* ${prefix}pass 16
 ⚡ *Quick Generate:* ${prefix}pass (default 12)
 
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃        Generated by CloudNextra         ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛`;
+
+        Generated by CloudNextra         
+`;
 
                         await sock.sendMessage(m.key.remoteJid, { text: passText }, { quoted: m });
                         console.log(`[WA-BOT] Password generated with length: ${length}`);
@@ -1725,15 +2003,15 @@ ${url}
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `❌ *Password Generator Error*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔧 *SYSTEM ERROR*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 ⚠️ Unable to generate password
 🔄 Please try again in a few moments
 🔐 Security protocols intact
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━` 
+` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Password command error:', error);
                     }
@@ -1745,9 +2023,9 @@ ${url}
                     botEnabled = true;
                     const replyText = `✅ *Bot Status Updated*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🤖 *BOT MANAGEMENT SYSTEM*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 📋 *Current Status:* ✅ ACTIVE
 🟢 Bot is now fully operational and ready to serve
@@ -1767,11 +2045,11 @@ ${url}
 • Type \`.info\` for feature overview
 • Type \`.offbot\` to disable bot
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃        CloudNextra Bot V2.0 ONLINE      ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛`;
+
+
+        CloudNextra Bot V2.0 ONLINE      
+`;
                     await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
                     console.log('[WA-BOT] Bot enabled by user');
                     return;
@@ -1782,9 +2060,9 @@ ${url}
                     botEnabled = false;
                     const replyText = `❌ *Bot Status Updated*
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🤖 *BOT MANAGEMENT SYSTEM*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 
 📋 *Current Status:* ❌ INACTIVE
 🔴 Bot services have been temporarily disabled
@@ -1806,13 +2084,82 @@ ${url}
 💡 *To Reactivate:*
 Simply type \`.onbot\` when you want to use the bot again
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃        CloudNextra Bot V2.0 OFFLINE     ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛`;
+
+
+        CloudNextra Bot V2.0 OFFLINE     
+`;
                     await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
                     console.log('[WA-BOT] Bot disabled by user');
+                    return;
+                }
+
+                // Handle .newqr command - Generate new QR code by clearing auth
+                if (cmd === 'newqr' || cmd === 'resetauth') {
+                    const replyText = `🔄 *Device Re-Registration*
+
+
+🤖 *AUTHENTICATION RESET*
+
+
+⚠️ *WARNING:* This will disconnect the current device!
+
+📱 *What will happen:*
+• Current WhatsApp session will be cleared
+• Bot will restart and generate fresh QR code
+• You'll need to scan new QR to reconnect
+• All settings will be preserved
+
+🔄 *This process will:*
+1. Clear authentication data
+2. Restart the connection
+3. Generate new QR code
+4. Wait for you to scan it
+
+💡 *Use this if:*
+• WhatsApp shows "Device not registered"
+• Connection keeps failing
+• Need to link new phone number
+
+
+
+⏳ *Starting fresh registration in 3 seconds...*
+
+
+     CloudNextra Bot V2.0 RESET       
+`;
+
+                    await sock.sendMessage(m.key.remoteJid, { text: replyText }, { quoted: m });
+                    console.log('[WA-BOT] 🔄 Fresh QR generation requested by user');
+                    
+                    // Clear auth and restart connection after delay
+                    setTimeout(async () => {
+                        try {
+                            // Clear authentication
+                            if (clearAuthInfo()) {
+                                console.log('[WA-BOT] ✅ Authentication cleared for fresh QR');
+                                
+                                // Close current connection
+                                if (currentSock) {
+                                    try { currentSock.end?.(); } catch (e) { /* ignore */ }
+                                }
+                                currentSock = null;
+                                
+                                // Reset connection state
+                                isConnecting = false;
+                                retryCount = 0;
+                                qrCodeData = null;
+                                connectionStatus = 'registering';
+                                
+                                // Start fresh connection
+                                console.log('[WA-BOT] 🚀 Starting fresh connection with new QR...');
+                                setTimeout(() => connectToWhatsApp(), 1000);
+                            }
+                        } catch (error) {
+                            console.error('[WA-BOT] Error during auth reset:', error);
+                        }
+                    }, 3000);
+                    
                     return;
                 }
 
@@ -1829,7 +2176,9 @@ Simply type \`.onbot\` when you want to use the bot again
             console.log('[WA-BOT] Command executed:', {
                 from: m.key.remoteJid,
                 command: cmd,
-                fromSelf: m.key.fromMe
+                fromSelf: m.key.fromMe,
+                messageType: messageType,
+                hasQuoted: !!m.message?.extendedTextMessage?.contextInfo?.quotedMessage
             });
         });
     } catch (err) {

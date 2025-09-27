@@ -1,5 +1,3 @@
-# CloudNextra WhatsApp Bot V2.0 - Docker Configuration
-# Multi-stage build for optimized image size and better caching
 FROM node:20-slim as builder
 
 # Set build-time environment variables

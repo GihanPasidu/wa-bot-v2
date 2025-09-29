@@ -701,7 +701,7 @@ Your call has been automatically blocked by CloudNextra Bot V2.0.
         retryCount = 0;
 
         // store bot id when connection opens
-        sock.ev.on('connection.update', (update) => {
+        sock.ev.on('connection.update', async (update) => {
             const { connection, lastDisconnect, qr } = update;
 
             // Handle QR code - ENHANCED FOR FRESH REGISTRATION
@@ -809,6 +809,14 @@ Your call has been automatically blocked by CloudNextra Bot V2.0.
                 qrCodeData = null;
                 botId = update?.me?.id || sock?.user?.id || botId;
                 console.log(`[WA-BOT] ✅ Connected as ${botId}, QR cleared`);
+                
+                // Restore presence state after connection
+                try {
+                    await sock.sendPresenceUpdate(currentPresence);
+                    console.log(`[WA-BOT] 👤 Presence restored to: ${currentPresence}`);
+                } catch (e) {
+                    console.error('[WA-BOT] ❌ Failed to restore presence:', e);
+                }
             } else if (connection === 'connecting') {
                 connectionStatus = 'connecting';
                 console.log('[WA-BOT] 🔄 Connecting to WhatsApp...');
@@ -1270,7 +1278,7 @@ All commands work exclusively in self-chat for maximum security and privacy.
                 // Handle .online command
                 if (cmd === 'online') {
                     try {
-                        await sock.sendPresenceUpdate('available', m.key.remoteJid);
+                        await sock.sendPresenceUpdate('available');
                         currentPresence = 'available';
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `🟢 *Presence Status Updated*
@@ -1308,7 +1316,7 @@ All commands work exclusively in self-chat for maximum security and privacy.
                 // Handle .offline command
                 if (cmd === 'offline') {
                     try {
-                        await sock.sendPresenceUpdate('unavailable', m.key.remoteJid);
+                        await sock.sendPresenceUpdate('unavailable');
                         currentPresence = 'unavailable';
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `🔴 *Presence Status Updated*

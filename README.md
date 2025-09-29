@@ -4,7 +4,11 @@
   
 [![Version](https://img.shields.io/badge/Version-2.0.0-brightgreen.svg)](https://github.com/GihanPasidu/WA-BOT)
 [![Node](https://img.shields.io/badge/Node.js-20%2B-blue.svg)](https://nodejs.org/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ed.svg)](https://docker.com)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ed.svg)]| `.offline` | Set presence to offline | `.offline` |
+| `.anticall` | 📞 Toggle call blocking | `.anticall` |
+| `.panel` | 📋 Show control panel | `.panel` |
+
+## 👀 Auto-View Featuredocker.com)
 [![Render](https://img.shields.io/badge/Render-Deploy-46e3b7.svg)](https://render.com)
 [![License](https://img.shields.io/badge/License-Apache%202.0-yellow.svg)](LICENSE)
 
@@ -24,11 +28,7 @@
 - ⚡ **Performance Boost** - Optimized codebase with faster response times
 
 ### 🆕 **New Commands**
-- 🔐 **Password Generator** - Create ultra-secure passwords (4-50 characters)
-- 🔗 **URL Shortener** - Ready for integration with popular services
-- 🏷️ **Advanced Sticker Maker** - Convert images/GIFs to stickers instantly
-- 🖼️ **Sticker to Image** - Convert stickers back to images
-- 📱 **Enhanced Control Panel** - Complete dashboard with system analytics
+-  **Enhanced Control Panel** - Complete dashboard with system analytics
 
 ### 🎯 **Professional Improvements**
 - 📋 **Structured Messages** - All responses now feature professional formatting
@@ -78,10 +78,7 @@
 ### 🛠️ **Utility Tools**
 | Command | Description | Usage | V2.0 Status |
 |---------|-------------|-------|-------------|
-| `.sticker` | 🏷️ Create stickers from images/GIFs | `.sticker` (with image) | ✅ Professional UI |
-| `.toimg` | 🖼️ Convert stickers to images | `.toimg` (reply to sticker) | 🆕 New Feature |
-| `.pass` | 🔐 Generate ultra-secure passwords | `.pass 16` | 🆕 New Feature |
-| `.shorturl` | 🔗 URL shortener (ready for API) | `.shorturl https://example.com` | 🆕 New Feature |
+| `.panel` | 📋 Complete control dashboard with analytics | `.panel` | ✅ Enhanced |
 
 ---
 

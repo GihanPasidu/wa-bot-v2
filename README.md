@@ -4,7 +4,10 @@
   
 [![Version](https://img.shields.io/badge/Version-2.0.0-brightgreen.svg)](https://github.com/GihanPasidu/WA-BOT)
 [![Node](https://img.shields.io/badge/Node.js-20%2B-blue.svg)](https://nodejs.org/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ed.svg)]| `.offline` | Set presence to offline | `.offline` |
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ed.svg)]| `.o| `.anticall` | 📞 Toggle call blocking | `.anticall` |
+| `.panel` | 📋 Show control panel | `.panel` |
+
+## 👀 Auto-View Feature| Set presence to offline | `.offline` |
 | `.anticall` | 📞 Toggle call blocking | `.anticall` |
 | `.panel` | 📋 Show control panel | `.panel` |
 
@@ -35,6 +38,7 @@
 - 🎨 **Visual Appeal** - Unicode box-drawing characters for beautiful layouts
 - 📈 **Better UX** - Intuitive command structure and helpful error messages
 - 🔄 **Smart Retry Logic** - Enhanced connection stability and auto-recovery
+- 👤 **Persistent Presence** - Offline status now persists through reconnections
 
 ---
 
@@ -44,7 +48,7 @@
 - 🔐 **Multi-device WhatsApp Connection** - Seamless Baileys integration
 - 📱 **QR Code Web Interface** - No terminal checking needed!
 - 👀 **Auto-View Status Updates** - Intelligent status viewing (not messages)
-- 🎭 **Presence Management** - Control online/offline status dynamically
+- 🎭 **Presence Management** - Control online/offline status dynamically (persistent state)
 - 🌐 **Beautiful Web Dashboard** - Real-time status and analytics
 - ⚡ **Lightning-Fast Processing** - Optimized message handling
 - 🔄 **Auto-Reconnection** - Smart retry logic with exponential backoff
@@ -66,7 +70,7 @@
 | `.info` | 📈 Detailed bot analytics & system information | `.info` | ✅ Enhanced |
 | `.panel` | 🎛️ Complete control dashboard with analytics | `.panel` | 🆕 New Feature |
 | `.online` | 🟢 Set presence to online | `.online` | ✅ Enhanced |
-| `.offline` | 🔴 Set presence to offline | `.offline` | ✅ Enhanced |
+| `.offline` | 🔴 Set presence to offline (persistent) | `.offline` | ✅ Enhanced |
 
 ### 🤖 **Smart Features**
 | Command | Description | Usage | V2.0 Status |

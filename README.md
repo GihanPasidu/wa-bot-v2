@@ -49,7 +49,8 @@
 - 📱 **QR Code Web Interface** - No terminal checking needed!
 - 👀 **Auto-View Status Updates** - Intelligent status viewing (not messages)
 - 🎭 **Presence Management** - Control online/offline status dynamically (persistent state)
-- 🌐 **Beautiful Web Dashboard** - Real-time status and analytics
+- �️ **Bot Control System** - Enable/disable bot functionality with `.onbot`/`.offbot`
+- �🌐 **Beautiful Web Dashboard** - Real-time status and analytics
 - ⚡ **Lightning-Fast Processing** - Optimized message handling
 - 🔄 **Auto-Reconnection** - Smart retry logic with exponential backoff
 - 🐳 **Docker Containerization** - Easy deployment anywhere
@@ -69,6 +70,8 @@
 |---------|-------------|-------|-------------|
 | `.info` | 📈 Detailed bot analytics & system information | `.info` | ✅ Enhanced |
 | `.panel` | 🎛️ Complete control dashboard with analytics | `.panel` | 🆕 New Feature |
+| `.onbot` | 🟢 Enable bot and all services | `.onbot` | ✅ Enhanced |
+| `.offbot` | 🔴 Disable bot (keep basic commands) | `.offbot` | ✅ Enhanced |
 | `.online` | 🟢 Set presence to online | `.online` | ✅ Enhanced |
 | `.offline` | 🔴 Set presence to offline (persistent) | `.offline` | ✅ Enhanced |
 
@@ -123,6 +126,26 @@ The auto-view feature is designed to **only view status updates**, not regular m
 
 ### 🛡️ **Privacy Protection:**
 This ensures your privacy while keeping up with status updates from contacts.
+
+---
+
+## 🤖 Bot Control System
+
+The bot features a comprehensive control system to enable/disable functionality as needed:
+
+### 🎛️ **Bot Management Commands**
+- **`.onbot`** - 🟢 Enable bot and activate all services
+- **`.offbot`** - 🔴 Disable bot while keeping essential commands
+
+### ✨ **How it works:**
+- ✅ **When Enabled (`.onbot`)**: All features work (auto-reply, auto-view, call blocking, full command set)
+- ❌ **When Disabled (`.offbot`)**: Most features disabled, only `.onbot`, `.offbot`, and `.info` commands work
+- 🔧 **Smart Design**: Bot remembers your settings and restores them when re-enabled
+- 🛡️ **Safety First**: Critical commands like `.onbot` always work to prevent lockout
+
+### 📊 **Status Tracking:**
+- Check current bot status via `.info` or `.panel` commands
+- Bot status is clearly displayed in all system information
 
 ---
 
@@ -330,6 +353,8 @@ The auto-reply feature automatically responds to incoming messages containing sp
 | Command | Description | Usage |
 |---------|-------------|-------|
 | `.info` | Show bot information and statistics | `.info` |
+| `.onbot` | Enable bot and all services | `.onbot` |
+| `.offbot` | Disable bot (keep basic commands) | `.offbot` |
 | `.autoview` | Toggle auto-view for status updates | `.autoview` |
 | `.autoreply` | Toggle auto-reply for messages | `.autoreply` |
 | `.online` | Set presence to online | `.online` |

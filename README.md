@@ -82,11 +82,6 @@
 | `.autoview` | 👀 Toggle automatic status viewing | `.autoview` | ✅ Enhanced |
 | `.anticall` | 📞 Toggle advanced call blocking | `.anticall` | ✅ Better Security |
 
-### 🛠️ **Utility Tools**
-| Command | Description | Usage | V2.0 Status |
-|---------|-------------|-------|-------------|
-| `.panel` | 📋 Complete control dashboard with analytics | `.panel` | ✅ Enhanced |
-
 ---
 
 ## 🤖 Advanced Auto-Reply System

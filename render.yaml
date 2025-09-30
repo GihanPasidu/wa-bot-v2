@@ -45,7 +45,7 @@ services:
       
       # Keep-Alive Configuration
       - key: RENDER_EXTERNAL_URL
-        value: https://wa-bot-g7qp.onrender.com
+        sync: false
       - key: KEEP_ALIVE_INTERVAL
         value: "10"
       

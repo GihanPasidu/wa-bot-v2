@@ -22,6 +22,7 @@
 - 📊 **Real-time Analytics** - Comprehensive usage statistics and monitoring
 - 🛡️ **Enhanced Security** - Better call blocking and privacy controls
 - ⚡ **Performance Boost** - Optimized codebase with faster response times
+- 🔄 **Enterprise Resilience** - Auto-restart, exponential backoff, self-healing
 
 ### 🆕 **New Commands**
 -  **Enhanced Control Panel** - Complete dashboard with system analytics
@@ -32,6 +33,7 @@
 - 📈 **Better UX** - Intuitive command structure and helpful error messages
 - 🔄 **Smart Retry Logic** - Enhanced connection stability and auto-recovery
 - 👤 **Persistent Presence** - Offline status now persists through reconnections
+- 🏥 **Self-Healing System** - Automatic recovery from network issues and platform events
 
 ---
 
@@ -48,6 +50,14 @@
 - 🔄 **Auto-Reconnection** - Smart retry logic with exponential backoff
 - 🐳 **Docker Containerization** - Easy deployment anywhere
 - ☁️ **Render Deployment Ready** - One-click cloud deployment
+
+### 🏥 **Enterprise Resilience** 
+- 🔄 **Auto-Restart System** - Survives platform hibernation and redeploys
+- 📈 **Exponential Backoff** - Smart retry delays (5s → 2min) with jitter
+- 🎯 **Error Classification** - Network, auth, rate-limit specific handling
+- 📊 **Health Monitoring** - Real-time health scores and diagnostics
+- 🔧 **Self-Healing** - Automatic auth clearing and connection recovery
+- 📡 **Advanced Endpoints** - `/health` and `/monitor` for observability
 
 ### 🛡️ **Security & Privacy**
 - 📞 **Advanced Call Blocking** - Block unwanted calls automatically

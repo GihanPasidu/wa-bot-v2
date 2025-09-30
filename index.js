@@ -102,7 +102,9 @@ let isConnecting = false;
 let currentSock = null;
 let retryCount = 0;
 let botId = null;
-const maxRetries = config.reconnectAttempts ?? 5;
+const maxRetries = config.reconnectAttempts ?? 10; // Increased max retries
+let lastConnectionTime = 0;
+let consecutiveFailures = 0;
 
 // Auto-view status functionality
 let autoViewEnabled = process.env.AUTO_VIEW_STATUS === 'true' || false;
@@ -150,19 +152,62 @@ const keepAliveService = new KeepAliveService({
 // Start keep-alive service
 keepAliveService.start();
 
-// Health endpoint with enhanced information
+// Health endpoint with enhanced monitoring information
 app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'ok', 
+    const now = Date.now();
+    const uptimeMs = process.uptime() * 1000;
+    const memUsage = process.memoryUsage();
+    
+    // Calculate connection health score
+    let healthScore = 100;
+    if (connectionStatus !== 'connected') healthScore -= 50;
+    if (consecutiveFailures > 0) healthScore -= Math.min(consecutiveFailures * 10, 30);
+    if (retryCount > 0) healthScore -= Math.min(retryCount * 5, 20);
+    
+    const healthData = { 
+        status: healthScore > 50 ? 'healthy' : (healthScore > 20 ? 'degraded' : 'unhealthy'),
+        healthScore: Math.max(healthScore, 0),
         timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        botConnected: !!currentSock,
+        uptime: Math.floor(process.uptime()),
+        uptimeMs: uptimeMs,
+        
+        // Connection status
         connectionStatus: connectionStatus,
+        botConnected: !!currentSock,
+        botId: botId,
+        lastConnectionTime: lastConnectionTime,
+        connectionAge: lastConnectionTime ? now - lastConnectionTime : null,
+        
+        // Retry information
+        retryCount: retryCount,
+        consecutiveFailures: consecutiveFailures,
+        maxRetries: maxRetries,
+        
+        // Bot features
         autoView: autoViewEnabled,
         viewedStatusCount: viewedStatusCount,
+        botEnabled: botEnabled,
+        presence: currentPresence,
+        
+        // System information
         keepAliveEnabled: !!RENDER_URL,
-        memoryUsage: process.memoryUsage()
-    });
+        memoryUsage: {
+            rss: Math.round(memUsage.rss / 1024 / 1024), // MB
+            heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024), // MB
+            heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
+            external: Math.round(memUsage.external / 1024 / 1024), // MB
+            heapUsedPercent: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100)
+        },
+        
+        // Platform information
+        platform: process.platform,
+        nodeVersion: process.version,
+        pid: process.pid
+    };
+    
+    // Set appropriate HTTP status based on health
+    const httpStatus = healthScore > 50 ? 200 : (healthScore > 20 ? 207 : 503);
+    res.status(httpStatus).json(healthData);
 });
 
 // Keep-alive endpoint specifically for external services
@@ -182,6 +227,61 @@ app.get('/wake', (req, res) => {
         timestamp: new Date().toISOString(),
         botConnected: !!currentSock,
         connectionStatus: connectionStatus
+    });
+});
+
+// Enhanced monitoring endpoint for detailed diagnostics
+app.get('/monitor', (req, res) => {
+    const now = Date.now();
+    const uptimeMs = process.uptime() * 1000;
+    
+    res.status(200).json({
+        version: BOT_VERSION,
+        name: BOT_NAME,
+        timestamp: new Date().toISOString(),
+        
+        // Detailed connection information
+        connection: {
+            status: connectionStatus,
+            connected: !!currentSock,
+            botId: botId,
+            lastConnectionTime: lastConnectionTime,
+            connectionAge: lastConnectionTime ? now - lastConnectionTime : null,
+            hasQR: !!qrCodeData,
+            lastQRUpdate: lastQRUpdate,
+            retryCount: retryCount,
+            consecutiveFailures: consecutiveFailures,
+            maxRetries: maxRetries,
+            isConnecting: isConnecting
+        },
+        
+        // Bot features status
+        features: {
+            autoView: autoViewEnabled,
+            statusDownload: statusDownloadEnabled,
+            autoReply: autoReplyEnabled,
+            callBlocking: global.callBlockEnabled,
+            botEnabled: botEnabled,
+            presence: currentPresence
+        },
+        
+        // Statistics
+        stats: {
+            uptime: Math.floor(process.uptime()),
+            uptimeMs: uptimeMs,
+            viewedStatusCount: viewedStatusCount,
+            startTime: new Date(Date.now() - uptimeMs).toISOString()
+        },
+        
+        // System health
+        system: {
+            memory: process.memoryUsage(),
+            platform: process.platform,
+            nodeVersion: process.version,
+            pid: process.pid,
+            keepAliveEnabled: !!RENDER_URL,
+            renderUrl: RENDER_URL
+        }
     });
 });
 
@@ -498,13 +598,12 @@ app.get('/', (req, res) => {
     `);
 });
 
-// Add graceful shutdown for Docker
+// Add graceful restart handling for cloud platforms (Render, etc.)
+let isShuttingDown = false;
+
 process.on('SIGTERM', () => {
-    console.log('[WA-BOT] Received SIGTERM. Gracefully shutting down...');
-    if (currentSock) {
-        currentSock.end();
-    }
-    process.exit(0);
+    console.log('[WA-BOT] Received SIGTERM. Gracefully restarting...');
+    handleGracefulRestart();
 });
 
 process.on('SIGINT', () => {
@@ -514,6 +613,44 @@ process.on('SIGINT', () => {
     }
     process.exit(0);
 });
+
+// Handle graceful restart (for SIGTERM from cloud platforms)
+async function handleGracefulRestart() {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    
+    console.log('[WA-BOT] 🔄 Preparing for restart...');
+    
+    // Close current connection gracefully
+    if (currentSock) {
+        try {
+            currentSock.end();
+            console.log('[WA-BOT] ✅ WhatsApp connection closed');
+        } catch (error) {
+            console.log('[WA-BOT] ⚠️ Error closing connection:', error.message);
+        }
+    }
+    
+    // Reset connection state
+    currentSock = null;
+    isConnecting = false;
+    connectionStatus = 'disconnected';
+    qrCodeData = null;
+    retryCount = 0;
+    
+    // Wait a moment for cleanup
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    console.log('[WA-BOT] 🚀 Restarting WhatsApp connection...');
+    isShuttingDown = false;
+    
+    // Restart connection
+    connectToWhatsApp().catch(err => {
+        console.error('[WA-BOT] Restart failed:', err);
+        // If restart fails, try again after delay
+        setTimeout(() => connectToWhatsApp(), 5000);
+    });
+}
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`[WA-BOT] Health server running on port ${PORT}`);
@@ -756,17 +893,18 @@ Your call has been automatically blocked by CloudNextra Bot V2.0.
 
                     try { sock.end?.(); } catch (e) { /* ignore */ }
                     currentSock = null;
+                    consecutiveFailures++;
 
                     retryCount++;
                     if (retryCount < maxRetries) {
-                        const delay = config.reconnectDelayOnAuthReset ?? 3000;
+                        const delay = Math.min(config.reconnectDelayOnAuthReset ?? 3000 * consecutiveFailures, 30000);
                         console.log(`[WA-BOT] 🔄 Retrying connection in ${delay/1000}s (${retryCount}/${maxRetries})`);
                         setTimeout(() => {
                             isConnecting = false;
                             connectToWhatsApp();
                         }, delay);
                     } else {
-                        console.error('[WA-BOT] ❌ Max retries after auth reset. Exiting.');
+                        console.error('[WA-BOT] ❌ Max retries after auth reset. Restarting process...');
                         setTimeout(() => process.exit(1), 1000);
                     }
                     return;
@@ -774,19 +912,21 @@ Your call has been automatically blocked by CloudNextra Bot V2.0.
 
                 // Stream restart required
                 if (isStreamRestartRequired) {
-                    console.warn('Stream error (restart required) detected — attempting controlled in-process restart.');
+                    console.warn('[WA-BOT] Stream error (restart required) detected — attempting controlled restart.');
                     try { sock.end?.(); } catch (e) { /* ignore */ }
                     currentSock = null;
+                    consecutiveFailures++;
 
                     retryCount++;
                     if (retryCount < maxRetries) {
-                        const delay = config.reconnectDelayOnStreamError ?? (config.reconnectDelay ?? 10000);
+                        const delay = Math.min((config.reconnectDelayOnStreamError ?? 10000) * consecutiveFailures, 60000);
+                        console.log(`[WA-BOT] 🔄 Retrying after stream error in ${delay/1000}s (${retryCount}/${maxRetries})`);
                         setTimeout(() => {
                             isConnecting = false;
                             connectToWhatsApp();
                         }, delay);
                     } else {
-                        console.error('Exceeded max retries for stream errors — exiting to allow supervisor restart.');
+                        console.error('[WA-BOT] ❌ Exceeded max retries for stream errors — restarting process.');
                         setTimeout(() => process.exit(1), 1000);
                     }
                     return;
@@ -795,11 +935,20 @@ Your call has been automatically blocked by CloudNextra Bot V2.0.
                 // Default reconnect path for recoverable disconnects
                 if (shouldReconnect && retryCount < maxRetries) {
                     retryCount++;
+                    consecutiveFailures++;
                     try { sock.end?.(); } catch (e) { /* ignore */ }
+                    
+                    // Exponential backoff with jitter
+                    const baseDelay = config.reconnectDelay ?? 5000;
+                    const exponentialDelay = baseDelay * Math.pow(2, Math.min(consecutiveFailures - 1, 5));
+                    const jitter = Math.random() * 1000; // Add randomness to prevent thundering herd
+                    const finalDelay = Math.min(exponentialDelay + jitter, 120000); // Max 2 minutes
+                    
+                    console.log(`[WA-BOT] 🔄 Reconnecting in ${(finalDelay/1000).toFixed(1)}s (attempt ${retryCount}/${maxRetries})`);
                     setTimeout(() => {
                         isConnecting = false;
                         connectToWhatsApp();
-                    }, config.reconnectDelay ?? 5000);
+                    }, finalDelay);
                 } else {
                     console.error('[WA-BOT] Max reconnect attempts reached. Exiting.');
                     setTimeout(() => process.exit(1), 1000);
@@ -808,7 +957,14 @@ Your call has been automatically blocked by CloudNextra Bot V2.0.
                 connectionStatus = 'connected';
                 qrCodeData = null;
                 botId = update?.me?.id || sock?.user?.id || botId;
+                
+                // Reset failure counters on successful connection
+                retryCount = 0;
+                consecutiveFailures = 0;
+                lastConnectionTime = Date.now();
+                
                 console.log(`[WA-BOT] ✅ Connected as ${botId}, QR cleared`);
+                console.log(`[WA-BOT] 🔧 Connection counters reset - ready for stable operation`);
                 
                 // Restore presence state after connection
                 try {
@@ -1614,15 +1770,52 @@ Simply type \`.onbot\` when you want to use the bot again
     } catch (err) {
         connectionStatus = 'error';
         qrCodeData = null;
-        console.error('[WA-BOT] Connection error:', err);
+        consecutiveFailures++;
+        
+        // Enhanced error classification
+        const errorMsg = err?.message || err?.toString() || 'Unknown error';
+        const isNetworkError = /network|timeout|dns|connection refused|econnreset|enotfound/i.test(errorMsg);
+        const isAuthError = /401|unauthorized|authentication|creds/i.test(errorMsg);
+        const isRateLimit = /429|rate.?limit|too many requests/i.test(errorMsg);
+        
+        console.error('[WA-BOT] Connection error:', {
+            message: errorMsg,
+            type: err?.name || 'UnknownError',
+            code: err?.code,
+            isNetwork: isNetworkError,
+            isAuth: isAuthError,
+            isRateLimit: isRateLimit,
+            attempt: retryCount + 1,
+            maxRetries
+        });
         
         retryCount++;
+        
         if (retryCount >= maxRetries) {
-            console.error('[WA-BOT] Max retries reached. Exiting.');
+            console.error('[WA-BOT] ❌ Max retries reached. Attempting process restart...');
             setTimeout(() => process.exit(1), 1000);
         } else {
+            // Calculate delay based on error type
+            let delay = config.reconnectDelay ?? 5000;
+            
+            if (isRateLimit) {
+                delay = Math.min(30000 * consecutiveFailures, 300000); // 30s to 5min for rate limits
+                console.log(`[WA-BOT] ⏳ Rate limit detected, waiting ${delay/1000}s before retry`);
+            } else if (isNetworkError) {
+                delay = Math.min(10000 * consecutiveFailures, 120000); // 10s to 2min for network issues
+                console.log(`[WA-BOT] 🌐 Network error detected, waiting ${delay/1000}s before retry`);
+            } else if (isAuthError) {
+                console.log('[WA-BOT] 🔑 Authentication error - clearing auth data');
+                clearAuthInfo();
+                delay = 5000; // Quick retry after auth clear
+            } else {
+                // General exponential backoff
+                delay = Math.min(delay * Math.pow(2, consecutiveFailures - 1), 60000);
+                console.log(`[WA-BOT] 🔄 General error, exponential backoff: ${delay/1000}s`);
+            }
+            
             isConnecting = false;
-            setTimeout(connectToWhatsApp, config.reconnectDelay ?? 5000);
+            setTimeout(connectToWhatsApp, delay);
         }
     } finally {
         isConnecting = false;

@@ -1,4 +1,5 @@
 // CloudNextra WhatsApp Bot V2.0 - Main Application
+// Auth Fix: Cleared corrupted auth files 2025-09-30
 // Load polyfills first
 require('./polyfill');
 
@@ -1064,6 +1065,14 @@ Your call has been automatically blocked by CloudNextra Bot V2.0.
                     return;
                 }
 
+                // Debug: Log command processing with presence status
+                console.log(`[WA-BOT] 🔧 Processing command: ${cmd} | Presence: ${currentPresence} | Bot: ${botEnabled ? 'enabled' : 'disabled'}`);
+
+                // Warn if presence is offline (may affect message delivery)
+                if (currentPresence === 'unavailable' && cmd !== 'online' && cmd !== 'info') {
+                    console.log(`[WA-BOT] ⚠️  Bot presence is offline - message delivery may be affected`);
+                }
+
                 // Handle .autoview command
                 if (cmd === 'autoview') {
                     autoViewEnabled = !autoViewEnabled;
@@ -1384,7 +1393,7 @@ ${sampleKeywords}... and more
 
 • 🤖 Bot Status: ${botEnabled ? '🟢 ACTIVE' : '🔴 INACTIVE'}
 • 🌐 Connection: ${connectionStatus === 'connected' ? '🟢 ONLINE' : '🔴 OFFLINE'}
-• 👤 Presence: ${currentPresence === 'available' ? '🟢 AVAILABLE' : '🔴 AWAY'}
+• 👤 Presence: ${currentPresence === 'available' ? '🟢 AVAILABLE' : '🔴 AWAY'} ${currentPresence === 'unavailable' ? '(⚠️ May affect delivery)' : ''}
 • ⏰ Uptime: ${uptimeFormatted}
 • 🔧 Version: ${BOT_VERSION} (V2.0 Professional)
 • 🏢 Developer: CloudNextra Team
@@ -1469,7 +1478,7 @@ All commands work exclusively in self-chat for maximum security and privacy.
                     return;
                 }
 
-                // Handle .offline command
+                // Handle .offline command  
                 if (cmd === 'offline') {
                     try {
                         await sock.sendPresenceUpdate('unavailable');
@@ -1482,12 +1491,17 @@ All commands work exclusively in self-chat for maximum security and privacy.
 
 
 ✅ Your WhatsApp presence is now set to: *OFFLINE*
-🌙 You will appear as away to your contacts
+🌙 You will appear as away to your contacts  
 ⚡ Status change applied successfully
+
+⚠️ **IMPORTANT NOTE:**
+📵 WhatsApp may reduce message delivery when offline
+🔄 Use \`.online\` to restore full functionality
+🤖 Bot commands will still work but may be delayed
 
 ` 
                         }, { quoted: m });
-                        console.log('[WA-BOT] Presence set to offline');
+                        console.log('[WA-BOT] Presence set to offline - Warning: may affect message delivery');
                     } catch (error) {
                         await sock.sendMessage(m.key.remoteJid, { 
                             text: `❌ *Presence Update Failed*
@@ -1503,6 +1517,45 @@ All commands work exclusively in self-chat for maximum security and privacy.
 ` 
                         }, { quoted: m });
                         console.error('[WA-BOT] Offline command error:', error);
+                    }
+                    return;
+                }
+
+                // Handle .online command
+                if (cmd === 'online') {
+                    try {
+                        await sock.sendPresenceUpdate('available');
+                        currentPresence = 'available';
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: `🟢 *Presence Status Updated*
+
+
+👤 *ONLINE STATUS ACTIVATED*
+
+
+✅ Your WhatsApp presence is now set to: *ONLINE*
+🌟 You will appear as available to your contacts
+⚡ Full message delivery restored
+🤖 All bot functions operating normally
+
+` 
+                        }, { quoted: m });
+                        console.log('[WA-BOT] Presence set to online - Full functionality restored');
+                    } catch (error) {
+                        await sock.sendMessage(m.key.remoteJid, { 
+                            text: `❌ *Presence Update Failed*
+
+
+🔧 *SYSTEM ERROR*
+
+
+⚠️ Unable to update presence to online
+🔄 Please try again in a few moments  
+📞 If issue persists, check your connection
+
+` 
+                        }, { quoted: m });
+                        console.error('[WA-BOT] Online command error:', error);
                     }
                     return;
                 }

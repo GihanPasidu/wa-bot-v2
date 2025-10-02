@@ -22,7 +22,7 @@ const ffprobeStatic = require('ffprobe-static');
 const config = {
     autoRead: false,
     antiCall: true,
-    adminJids: ['94788006269@s.whatsapp.net','94767219661@s.whatsapp.net', '11837550653588@lid'], // Support both regular and linked device formats
+    adminJids: [], // Will be auto-populated with QR scanner's account
     botEnabled: true
 };
 
@@ -1137,6 +1137,22 @@ async function startBot() {
         if (connection === 'open') {
             console.log('🚀 CloudNextra Bot Successfully Connected!');
             console.log('🤖 Bot Status: Online and Ready');
+            
+            // Auto-detect and set bot owner (the account that scanned QR)
+            try {
+                const ownerJid = sock.user?.id;
+                if (ownerJid) {
+                    // Update config to only allow the bot owner
+                    config.adminJids = [ownerJid];
+                    console.log('👑 Bot Owner Auto-Detected:', ownerJid);
+                    console.log('🔒 Bot restricted to owner only');
+                } else {
+                    console.log('⚠️ Could not detect owner JID, using default admin list');
+                }
+            } catch (error) {
+                console.log('⚠️ Error detecting owner:', error.message);
+            }
+            
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
             
             // Update connection status for web interface
@@ -1214,6 +1230,13 @@ async function startBot() {
                     continue;
                 }
                 
+                // Only allow commands from the bot owner (QR scanner)
+                if (!isBotAdmin) {
+                    await sock.sendMessage(from, { 
+                        text: '🔒 *Access Restricted*\n\n❌ This bot only responds to the account that scanned the QR code.\n\n🤖 *CloudNextra Bot V2.0* - Owner Only Mode' 
+                    }, { quoted: msg });
+                    continue;
+                }
                 
                 console.log(`Processing command: "${command}"`);
                 switch (command) {
@@ -1812,13 +1835,13 @@ ${timeInfo.location}
                             
                             if (isUserAdmin) {
                                 // Admin Help - Comprehensive guide
-                                helpText = `📚 *WhatsApp Bot v2 - Admin Command Reference*
+                                helpText = `📚 *WhatsApp Bot v2 - Owner Command Reference*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-👑 **Welcome, Administrator!**
-You have full access to all bot features and advanced controls.
+👑 **Welcome, Bot Owner!**
+🔒 This bot is restricted to your account only (QR scanner).
 
-🎛️ **Bot Management** (Admin Only)
+🎛️ **Bot Management** (Owner Only)
 • \`.panel\` — Admin control panel
 • \`.on\` / \`.off\` — Enable/disable bot
 • \`.autoread\` — Toggle auto view status
@@ -2049,9 +2072,10 @@ Here's everything you can do with this bot:
 
 🤖 **Bot Details:**
 • 📛 Name: WhatsApp Bot v2
-• 🏷️ Version: 2.0.0
+• 🏷️ Version: 2.0.0 (Owner-Only Mode)
 • 👨‍💻 Developer: CloudNextra Solutions
-• 📅 Build: September 2025
+• 📅 Build: October 2025
+• 🔒 Access: QR Scanner Account Only
 
 ⚙️ **Technical Stack:**
 • 🚀 Engine: Node.js ${process.version}
@@ -2150,9 +2174,10 @@ Here's everything you can do with this bot:
     });
 }
 
-console.log('🤖 Initializing CloudNextra Bot...');
+console.log('🤖 Initializing CloudNextra Bot V2.0...');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log('🔧 Built with Baileys Library');
+console.log('🔒 Owner-Only Mode: Bot restricted to QR scanner account');
 console.log('⚡ Loading modules and establishing connection...\n');
 
 // Health check server for Render

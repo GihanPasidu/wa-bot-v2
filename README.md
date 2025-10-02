@@ -2,7 +2,22 @@
 
 <div align="center">
 
-![CloudNextra Bot](https://img.shields.io/badge/CloudNextra-Bot%20v2.0.0-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)
+![C### 🛡️ **Security & Access Control**
+- 🔒 **Owner-Only Mode** — Bot responds only to the account that scanned the QR code
+- 🎯 **Auto-Detecti### 👑 **Bot Owner**
+- Full access to all commands
+- Bot management and configuration
+- Advanced debugging information
+- Owner-specific error messages
+
+### 🚫 **Non-Owners**
+- No access to any commands
+- Bot only responds to QR scanner account
+- Automatic access denial with clear messagingomatically identifies and restricts access to QR scanner
+- 📊 **Zero Configuration** — No manual admin setup or number configuration required
+- 📞 **Call Rejection** — Automatic call blocking functionality
+- 💾 **Secure Auth** — Authentication data protection (excluded from git)
+- 🔄 **Persistent Login** — Auth data survives deploymentsxtra Bot](https://img.shields.io/badge/CloudNextra-Bot%20v2.0.0-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)
 ![Node.js](### 🆕 **Version 2.0.0** - *Latest*
 - 🎬 **Advanced Media Support** — Full MP4 to animated WebP sticker conversion with size optimization
 - 🔧 **Improved Help System** — Role-based help documentation with clear permission indicators
@@ -25,12 +40,12 @@
 ## ✨ Key Features
 
 ### 🎛️ **Smart Role-Based Interface**
-- 👑 **Admin Panel** — Comprehensive control dashboard for bot administrators
-- 👤 **User Menu** — Simplified interface for regular users
-- 🔧 **Context-Aware Messages** — Different help and error messages based on user role
-- 📊 **Role-Specific Information** — Debug details for admins, user-friendly guidance for others
+- 👑 **Owner-Only Access** — Bot restricted to QR scanner account for maximum security
+- � **Context-Aware Messages** — Personalized responses for the bot owner
+- � **Auto-Detection** — Automatically detects and restricts access to QR scanner
+- � **Zero Configuration** — No manual admin setup required
 
-### 🎛️ **Bot Management** *(Bot Admin Only)*
+### 🎛️ **Bot Management** *(Bot Owner Only)*
 - 🔧 **Control Panel** — Comprehensive command dashboard  
 - 📖 **Auto-Read** — Toggle automatic message reading
 - 📞 **Anti-Call** — Block unwanted voice/video calls
@@ -85,11 +100,17 @@
    npm install
    ```
 
-3. **⚙️ Configure Admin**
+3. **⚙️ Configure Bot**
    
-   Edit `bot.js` and add your WhatsApp number:
+   No configuration needed! The bot automatically restricts access to the account that scans the QR code.
+   
+   Optional: Edit `bot.js` to customize settings:
    ```javascript
-   adminJids: ['your-number@s.whatsapp.net']
+   const config = {
+       autoRead: false,  // Auto-read messages
+       antiCall: true,   // Block calls
+       botEnabled: true  // Bot status
+   };
    ```
 
 4. **🚀 Start Bot**

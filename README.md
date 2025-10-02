@@ -1,14 +1,6 @@
 # 🤖 CloudNextra Bot v2.0.0
 
-<div al### 🆕 **Version 2.0.0** - *Latest*
-- 🎬 **Advanced Media Support** — Full MP4 to animated WebP sticker conversion with size optimization
-- 🛠️ **Smart Role Detection** — Context-aware error messages and feature access
-- 📱 **Web QR Interface** — Beautiful web-based QR code scanning at deployment URL
-- 🚀 **Production Ready** — Enhanced Render deployment with persistent authentication
-- 🎨 **Media Processing** — Hybrid FFmpeg + Sharp pipeline for optimal sticker quality
-- 📏 **File Size Optimization** — Intelligent compression with 500KB WhatsApp limit compliance
-
-### 🎛️ **Smart Role-Based Interface**r">
+<div align="center">
 
 ![CloudNextra Bot](https://img.shields.io/badge/CloudNextra-Bot%20v2.0.0-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)
@@ -214,7 +206,10 @@
 | `.time` | Current time & uptime | `.time` |
 | `.pass <length>` | Generate password | `.pass 12` |
 
-
+### 📚 **Help Commands** *(All Users)*
+| Command | Description | Usage |
+|---------|-------------|-------|
+| `.help` | Main help menu | `.help` |
 
 ---
 
@@ -237,7 +232,8 @@
 
 ### 🆕 **Version 2.0.0** - *Latest*
 - 🎬 **Advanced Media Support** — Full MP4 to animated WebP sticker conversion with size optimization
-- ️ **Smart Role Detection** — Context-aware error messages and feature access
+- 🔧 **Improved Help System** — Role-based help documentation with clear permission indicators
+- 🛠️ **Smart Role Detection** — Context-aware error messages and feature access
 - 📱 **Web QR Interface** — Beautiful web-based QR code scanning at deployment URL
 - 🚀 **Production Ready** — Enhanced Render deployment with persistent authentication
 - 🎨 **Media Processing** — Hybrid FFmpeg + Sharp pipeline for optimal sticker quality

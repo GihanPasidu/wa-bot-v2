@@ -2,8 +2,30 @@
 
 <div align="center">
 
-![CloudNextra Bot](https://img.shields.io/badge/CloudNextra-Bot%20v2.0.0-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)
+![C### 🛡️ **Security & Access Control**
+- 🔒 **Owner-Only Mode** — Bot responds only to the account that scanned the QR code
+- 🎯 **Auto-Detecti### 👑 **Bot Owner**
+- Full access to all commands
+- Bot management and configuration
+- Advanced debugging information
+- Owner-specific error messages
+
+### 🚫 **Non-Owners**
+- No access to any commands
+- Bot only responds to QR scanner account
+- Automatic access denial with clear messagingomatically identifies and restricts access to QR scanner
+- 📊 **Zero Configuration** — No manual admin setup or number configuration required
+- 📞 **Call Rejection** — Automatic call blocking functionality
+- 💾 **Secure Auth** — Authentication data protection (excluded from git)
+- 🔄 **Persistent Login** — Auth data survives deploymentsxtra Bot](https://img.shields.io/badge/CloudNextra-Bot%20v2.0.0-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)
+![Node.js](### 🆕 **Version 2.0.0** - *Latest*
+- 🎬 **Advanced Media Support** — Full MP4 to animated WebP sticker conversion with size optimization
+- 🔧 **Improved Help System** — Role-based help documentation with clear permission indicators
+- 🛠️ **Smart Role Detection** — Context-aware error messages and feature access
+- 📱 **Web QR Interface** — Beautiful web-based QR code scanning at deployment URL
+- 🚀 **Production Ready** — Enhanced Render deployment with persistent authentication
+- 🎨 **Media Processing** — Hybrid FFmpeg + Sharp pipeline for optimal sticker quality
+- 📏 **File Size Optimization** — Intelligent compression with 500KB WhatsApp limit complianceimg.shields.io/badge/Node.js-20%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![Baileys](https://img.shields.io/badge/Baileys-6.6.0-blue?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
@@ -17,39 +39,11 @@
 
 ## ✨ Key Features
 
-### 🛡️ **Security & Access Control**
-- 🔒 **Owner-Only Mode** — Bot responds only to the account that scanned the QR code
-- � **Auto-Detection** — Automatically identifies and restricts access to QR scanner
-- 📊 **Zero Configuration** — No manual admin setup or number configuration required
-- 📞 **Call Rejection** — Automatic call blocking functionality
-- 💾 **Secure Auth** — Authentication data protection (excluded from git)
-- 🔄 **Persistent Login** — Auth data survives deployments
-
-### 👑 **Bot Owner**
-- Full access to all commands
-- Bot management and configuration
-- Advanced debugging information
-- Owner-specific error messages
-
-### 🚫 **Non-Owners**
-- No access to any commands
-- Bot only responds to QR scanner account
-- Automatic access denial with clear messaging
-
-### 🆕 **Version 2.0.0** - *Latest*
-- 🎬 **Advanced Media Support** — Full MP4 to animated WebP sticker conversion with size optimization
-- 🔧 **Improved Help System** — Role-based help documentation with clear permission indicators
-- 🛠️ **Smart Role Detection** — Context-aware error messages and feature access
-- 📱 **Web QR Interface** — Beautiful web-based QR code scanning at deployment URL
-- 🚀 **Production Ready** — Enhanced Render deployment with persistent authentication
-- 🎨 **Media Processing** — Hybrid FFmpeg + Sharp pipeline for optimal sticker quality
-- 📏 **File Size Optimization** — Intelligent compression with 500KB WhatsApp limit compliance
-
-### �🎛️ **Smart Role-Based Interface**
+### 🎛️ **Smart Role-Based Interface**
 - 👑 **Owner-Only Access** — Bot restricted to QR scanner account for maximum security
-- 💬 **Context-Aware Messages** — Personalized responses for the bot owner
-- 🔍 **Auto-Detection** — Automatically detects and restricts access to QR scanner
-- ⚙️ **Zero Configuration** — No manual admin setup required
+- � **Context-Aware Messages** — Personalized responses for the bot owner
+- � **Auto-Detection** — Automatically detects and restricts access to QR scanner
+- � **Zero Configuration** — No manual admin setup required
 
 ### 🎛️ **Bot Management** *(Bot Owner Only)*
 - 🔧 **Control Panel** — Comprehensive command dashboard  
@@ -73,11 +67,11 @@
 
 ### 👥 **User Features** *(Available to All Users)*
 - ⏰ **Time & Info** — Current time, timezone, and bot statistics
-- 🔗 **URL Shortener** — Powered by TinyURL API integration
+- � **URL Shortener** — Powered by TinyURL API integration
 - 🌈 **Color Lookup** — Complete color codes (HEX, RGB, HSL)
-- 🔐 **Password Generator** — Cryptographically secure passwords
+- � **Password Generator** — Cryptographically secure passwords
 
-### 🛡️ **Security & Moderation**
+### ️ **Security & Moderation**
 - 🔐 **Role-Based Access** — Smart permission system with separate interfaces for admins and users
 - 📊 **Context-Aware Messaging** — Error messages and help content tailored to user privileges
 - 📞 **Call Rejection** — Automatic call blocking functionality
@@ -206,7 +200,7 @@
 | `.time` | Current time & uptime | `.time` |
 | `.pass <length>` | Generate password | `.pass 12` |
 
-### 📚 **Help Commands** *(All Users)*
+###  **Help Commands** *(All Users)*
 | Command | Description | Usage |
 |---------|-------------|-------|
 | `.help` | Main help menu | `.help` |
@@ -221,7 +215,7 @@
 - Advanced debugging information
 - Admin-specific error messages
 
-### 👥 **Regular Users**
+###  **Regular Users**
 - Media processing tools
 - Basic utility commands
 - User-friendly help system
@@ -249,7 +243,7 @@ We welcome contributions! Please feel free to submit a Pull Request.
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## � Acknowledgments
 
 - **Baileys** — Excellent WhatsApp Web API library
 - **Sharp** — High-performance image processing

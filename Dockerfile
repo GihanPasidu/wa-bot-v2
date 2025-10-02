@@ -1,89 +1,31 @@
-FROM node:20-slim as builder
-
-# Set build-time environment variables
-ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=1024"
-
-# Install build dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+FROM node:20-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files for better layer caching
+# Copy package files
 COPY package*.json ./
 
-# Install dependencies with optimized flags
-RUN npm ci --only=production --no-audit --no-fund && \
-    npm cache clean --force
+# Install dependencies
+RUN npm ci --only=production
 
-# Production stage
-FROM node:20-slim
+# Copy application files
+COPY . .
 
-# Metadata for V2.0
-LABEL version="2.0.0"
-LABEL description="CloudNextra WhatsApp Bot V2.0 - Professional Multi-Device Bot"
-LABEL maintainer="CloudNextra"
-LABEL org.opencontainers.image.source="https://github.com/GihanPasidu/WA-BOT"
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S botuser -u 1001
 
-# Set production environment variables
-ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=1024 --enable-source-maps"
-ENV TZ=UTC
+# Change ownership
+RUN chown -R botuser:nodejs /app
+USER botuser
 
-# Install runtime dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    curl \
-    ca-certificates \
-    && apt-get upgrade -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get autoremove -y
-
-# Create non-root user for security
-RUN groupadd -r cloudnextra && useradd -r -g cloudnextra cloudnextra
-
-# Set working directory
-WORKDIR /app
-
-# Copy node_modules from builder stage
-COPY --from=builder /app/node_modules ./node_modules
-
-# Copy application code
-COPY --chown=cloudnextra:cloudnextra . .
-
-# Create and set permissions for auth directory
-RUN mkdir -p auth_info logs tmp && \
-    chown -R cloudnextra:cloudnextra /app && \
-    chmod -R 755 /app
-
-# Switch to non-root user
-USER cloudnextra
-
-# Expose port with documentation
-EXPOSE $PORT
+# Expose port
 EXPOSE 10000
 
-# Add comprehensive health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-10000}/health || exit 1
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:10000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
-# Volume for persistent data
-VOLUME ["/app/auth_info", "/app/logs"]
-
-# Start the application with proper signal handling
-CMD ["node", "index.js"]
-
-# Build information
-ARG BUILD_DATE
-ARG VCS_REF
-LABEL org.opencontainers.image.created=$BUILD_DATE
-LABEL org.opencontainers.image.revision=$VCS_REF
-LABEL org.opencontainers.image.version="2.0.0"
+# Start the application
+CMD ["npm", "start"]

@@ -1,91 +1,24 @@
-# CloudNextra WhatsApp Bot V2.0 - Render Deployment Configuration
 services:
   - type: web
-    name: cloudnextra-wa-bot-v2
-    env: docker
-    dockerfilePath: ./Dockerfile
+    name: whatsapp-bot-v2
+    env: node
     plan: free
-    region: oregon
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
-      # Core V2.0 Environment Variables
       - key: NODE_ENV
         value: production
       - key: PORT
-        value: "10000"
-      
-      # Bot Configuration
-      - key: BOT_VERSION
-        value: "2.0.0"
-      - key: BOT_NAME
-        value: "CloudNextra Bot V2.0"
-      
-      # Session Management
-      - key: SESSION_ID
-        sync: false
-      
-      # Feature Toggles (V2.0)
-      - key: AUTO_VIEW_STATUS
-        value: "false"
-      - key: STATUS_DOWNLOAD
-        value: "true"
-      - key: AUTO_REPLY_ENABLED
-        value: "false"
-      - key: CALL_BLOCKING_ENABLED
-        value: "false"
-      
-      # Performance & Security (V2.0)
-      - key: ENABLE_METRICS
-        value: "true"
-      - key: ENABLE_RATE_LIMITING
-        value: "true"
-      - key: MAX_MEMORY_USAGE
-        value: "512"
-      - key: LOG_LEVEL
-        value: "info"
-      
-      # Keep-Alive Configuration
+        value: 10000
       - key: RENDER_EXTERNAL_URL
+        value: https://wa-bot-v2-5f7s.onrender.com
+      # Auth backup environment variables (managed by bot)
+      - key: BAILEYS_CREDS_BACKUP
         sync: false
-      - key: KEEP_ALIVE_INTERVAL
-        value: "10"
-      
-      # Professional UI (V2.0)
-      - key: PROFESSIONAL_UI
-        value: "true"
-      - key: UNICODE_BORDERS
-        value: "true"
-      
-      # Security Settings
-      - key: SELF_CHAT_ONLY
-        value: "true"
-      - key: PRIVATE_CHATS_ONLY
-        value: "true"
-      
-    # V2.0 Enhanced Health Check
-    healthCheckPath: /health
-    
-    # Persistent Storage for V2.0
-    disk:
-      name: cloudnextra-wa-bot-v2-storage
-      mountPath: /app/auth_info
-      sizeGB: 1
-    
-    # V2.0 Build Configuration
-    buildCommand: npm ci --only=production
-    
-    # Auto-Deploy Settings
+      - key: BAILEYS_KEYS_BACKUP
+        sync: false
+      - key: BAILEYS_BACKUP_TIMESTAMP
+        sync: false
     autoDeploy: true
-    branch: main
-    
-    # Resource Limits
-    maxCpu: 0.5
-    maxMemory: 1024MB
-    
-    # Custom Headers for V2.0
-    headers:
-      - path: /*
-        name: X-Bot-Version
-        value: "2.0.0"
-      - path: /*
-        name: X-Powered-By
-        value: "CloudNextra"
+    healthCheckPath: /health

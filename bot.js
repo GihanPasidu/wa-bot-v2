@@ -1827,117 +1827,7 @@ ${timeInfo.location}
                     }
                     
                     // Basic Commands
-                    case '.help': {
-                        try {
-                            const targetJid = getSelfChatTargetJid(senderJid, from);
-                            const isUserAdmin = isBotAdmin;
-                            let helpText;
-                            
-                            if (isUserAdmin) {
-                                // Admin Help - Comprehensive guide
-                                helpText = `📚 *WhatsApp Bot v2 - Owner Command Reference*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-👑 **Welcome, Bot Owner!**
-🔒 This bot is restricted to your account only (QR scanner).
-
-🎛️ **Bot Management** (Owner Only)
-• \`.panel\` — Admin control panel
-• \`.on\` / \`.off\` — Enable/disable bot
-• \`.autoread\` — Toggle auto view status
-• \`.anticall\` — Toggle call blocking
-• \`.status\` — Detailed system information
-
-🔍 **Information & Debug**
-• \`.help\` — This admin command reference
-• \`.stats\` — Bot statistics & uptime
-• \`.ping\` — Response time test
-• \`.about\` — Bot technical information
-
-🎨 **Media Processing**
-• \`.sticker\` — Convert image/GIF to sticker (supports animated GIFs)
-• \`.toimg\` — Convert sticker to image
-• \`.togif\` — Convert sticker to animated GIF
-*Note: Works with quoted messages or direct uploads*
-
-🛠️ **Advanced Tools**
-• \`.shorturl [url]\` — URL shortener with TinyURL API
-• \`.color [name]\` — Complete color code lookup (HEX, RGB, HSL)
-• \`.time\` — Current time with timezone info
-• \`.pass [length]\` — Cryptographically secure password generator
-
- **Admin Features**
-• Complete system access and control
-• Advanced error messages with debug info
-• Bot configuration management
-• System monitoring and diagnostics
-
-💡 **Admin Tips:**
-• Use \`.panel\` for interactive admin control
-• Error messages include debug information for troubleshooting
-
-🚀 **Technical Details:**
-• Built with Baileys v6.6.0
-• Node.js 20+ with Sharp image processing
-• Persistent authentication with automatic backup
-• Self-chat redirection for optimal UX
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-                            } else {
-                                // User Help - Simplified guide
-                                helpText = `📚 *WhatsApp Bot v2 - User Guide*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-👋 **Welcome!**
-Here's everything you can do with this bot:
-
-🔍 **Information Commands**
-• \`.help\` — Show this user guide
-• \`.status\` — Bot status & information  
-• \`.panel\` — User menu with available commands
-
-🎨 **Media Features**
-• \`.sticker\` — Turn your image or GIF into a WhatsApp sticker
-• \`.toimg\` — Convert sticker back to image
-• \`.togif\` — Convert animated sticker back to GIF
-
-💡 **How to use media commands:**
-• Send an image/GIF, then type \`.sticker\`
-• Reply to an image/GIF with \`.sticker\`
-• Reply to a sticker with \`.toimg\` or \`.togif\`
-
-�️ **Useful Tools**
-• \`.shorturl [url]\` — Make long URLs short and easy to share
-• \`.color [name]\` — Get color codes (try: \`.color red\`)
-• \`.time\` — See current time and date
-• \`.pass [12]\` — Generate a secure password
-
- **Example Commands:**
-• \`.shorturl https://example.com/very/long/url\`
-• \`.color blue\`
-• \`.pass 16\`
-
-🤝 **Need More Help?**
-• Use \`.panel\` for an interactive menu
-• Contact a bot administrator for advanced features
-• Bot admins have access to additional commands
-
-� **Tips for Best Experience:**
-• Images work best in JPG or PNG format
-• Be patient with media processing
-• Check your spelling when typing commands
-• Some features require specific permissions
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-                            }
-                            
-                            await sock.sendMessage(targetJid, { text: helpText }, { quoted: msg });
-                        } catch (e) {
-                            console.error('Error showing help:', e);
-                            await sendErrorMessage(sock, senderJid, from, 'COMMAND_ERROR', 'help');
-                        }
-                        break;
-                    }
+                    
                     
                     case '.stats': {
                         try {
@@ -1997,144 +1887,9 @@ Here's everything you can do with this bot:
                         break;
                     }
                     
-                    case '.ping': {
-                        try {
-                            const targetJid = getSelfChatTargetJid(senderJid, from);
-                            const startTime = Date.now();
-                            
-                            // Send initial ping message
-                            const sentMsg = await sock.sendMessage(targetJid, { 
-                                text: '📡 *Ping Test*\n\n⏳ Measuring response time...' 
-                            }, { quoted: msg });
-                            
-                            // Calculate response time
-                            const responseTime = Date.now() - startTime;
-                            
-                            // Update with results
-                            setTimeout(async () => {
-                                try {
-                                    let speedEmoji = '🟢';
-                                    let speedStatus = 'Excellent';
-                                    
-                                    if (responseTime > 1000) {
-                                        speedEmoji = '🟡';
-                                        speedStatus = 'Good';
-                                    }
-                                    if (responseTime > 2000) {
-                                        speedEmoji = '🟠';
-                                        speedStatus = 'Average';
-                                    }
-                                    if (responseTime > 3000) {
-                                        speedEmoji = '🔴';
-                                        speedStatus = 'Slow';
-                                    }
-                                    
-                                    const pingText = `📡 *Ping Test Results*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-⚡ **Response Time:**
-• 🕐 Latency: ${responseTime}ms
-• ${speedEmoji} Status: ${speedStatus}
-• 📊 Performance: ${responseTime < 500 ? 'Optimal' : responseTime < 1500 ? 'Good' : 'Needs Improvement'}
-
-🌐 **Connection Quality:**
-• 📶 Signal: Strong
-• 🔄 Stability: Active
-• 🛡️ Security: Encrypted
-
-📈 **Benchmark:**
-• 🟢 < 500ms: Excellent
-• 🟡 500-1500ms: Good  
-• 🟠 1500-3000ms: Average
-• 🔴 > 3000ms: Slow
-
-🚀 *Bot is responding efficiently!*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-                                    
-                                    await sock.sendMessage(targetJid, { text: pingText }, { quoted: msg });
-                                } catch (updateError) {
-                                    console.error('Error updating ping result:', updateError);
-                                }
-                            }, 1000);
-                            
-                        } catch (e) {
-                            console.error('Error running ping test:', e);
-                            await sendErrorMessage(sock, senderJid, from, 'COMMAND_ERROR', 'ping');
-                        }
-                        break;
-                    }
                     
-                    case '.about': {
-                        try {
-                            const targetJid = getSelfChatTargetJid(senderJid, from);
-                            const aboutText = `ℹ️ *WhatsApp Bot v2 Information*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-🤖 **Bot Details:**
-• 📛 Name: WhatsApp Bot v2
-• 🏷️ Version: 2.0.0 (Owner-Only Mode)
-• 👨‍💻 Developer: CloudNextra Solutions
-• 📅 Build: October 2025
-• 🔒 Access: QR Scanner Account Only
-
-⚙️ **Technical Stack:**
-• 🚀 Engine: Node.js ${process.version}
-• 📚 Library: @whiskeysockets/baileys v6.6.0
-• 🖼️ Image Processing: Sharp v0.33.4
-• 🔍 Logging: Pino v9.0.0
-• 📱 Platform: ${process.platform}
-
-🌟 **Key Features:**
-• 💬 Multi-format messaging support
-• 🎨 Advanced media processing
-• � Smart utility features
-• 🔒 Security & admin controls
-• 🛠️ Utility tools & generators
-• 📡 Self-chat compatibility
-• ⚡ Real-time error handling
-
-🔧 **Capabilities:**
-• 📸 Image ↔ Sticker conversion
-• 🔗 URL shortening service
-• 🎨 Color code lookup
-• 🔐 Secure password generation
-• ⏰ Time & timezone display
-• 📊 System statistics
-• 🚫 Anti-spam protection
-
-🛡️ **Security Features:**
-• 🔑 Admin permission system
-• 🚨 Automatic call rejection
-• 🎵 Media processing capabilities
-• � Image manipulation features
-• 📱 Self-chat message routing
-
-💼 **Professional Use:**
-• 🏢 Business communication
-• 📋 Automated content processing
-• 🎯 Content creation tools
-• 📊 Performance monitoring
-• 🔧 System administration
-
-🌐 **Open Source:**
-• 📄 License: MIT
-• 🔄 Updates: Regular
-• 🐛 Bug Reports: GitHub Issues
-• 💡 Feature Requests: Welcome
-
-🚀 *Built with performance and reliability in mind!*
-
-📞 **Support:** Use .help for commands
-🎯 **Quick Start:** Send .panel for menu
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-                            
-                            await sock.sendMessage(targetJid, { text: aboutText }, { quoted: msg });
-                        } catch (e) {
-                            console.error('Error showing about info:', e);
-                            await sendErrorMessage(sock, senderJid, from, 'COMMAND_ERROR', 'about');
-                        }
-                        break;
-                    }
+                    
+                    
                     
                     default: {
                         console.log(`Unknown command: "${command}"`);
@@ -2143,9 +1898,9 @@ Here's everything you can do with this bot:
                         
                         let helpMessage;
                         if (isUserAdmin) {
-                            helpMessage = `❓ *Command Not Recognized (Admin)*\n\n🤖 The command "${command}" is not available\n\n🔧 *Admin Debug Info:*\n• Command: ${command}\n• From: ${senderJid}\n• Context: Private\n\n📋 *Get Help:*\n• Send \`.panel\` for admin control panel\n• Send \`.help\` for complete admin command list\n• Check command spelling and syntax\n\n💡 *Admin Note:* If this should be a valid command, check the code or contact the developer!`;
+                            helpMessage = `❓ *Command Not Recognized (Admin)*\n\n🤖 The command "${command}" is not available\n\n🔧 *Admin Debug Info:*\n• Command: ${command}\n• From: ${senderJid}\n• Context: Private\n\n📋 *Get Help:*\n• Send \`.panel\` for admin control panel\n• Check command spelling and syntax\n\n💡 *Admin Note:* If this should be a valid command, check the code or contact the developer!`;
                         } else {
-                            helpMessage = `❓ *Command Not Recognized*\n\n🤖 The command "${command}" is not available to you\n\n📋 *Get Help:*\n• Send \`.panel\` for available commands\n• Send \`.help\` for user guide\n• Check your spelling and try again\n\n💡 *Tips:*\n• Some commands are admin-only\n• Make sure you're typing the command correctly\n• Contact a bot admin if you need special features!`;
+                            helpMessage = `❓ *Command Not Recognized*\n\n🤖 The command "${command}" is not available to you\n\n📋 *Get Help:*\n• Send \`.panel\` for available commands\n• Check your spelling and try again\n\n💡 *Tips:*\n• Some commands are admin-only\n• Make sure you're typing the command correctly\n• Contact a bot admin if you need special features!`;
                         }
                         
                         await sock.sendMessage(targetJid, { text: helpMessage }, { quoted: msg });
